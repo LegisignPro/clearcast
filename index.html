@@ -257,7 +257,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     <div id="pform">
       <input id="pmail" class="pmail" type="email" placeholder="you@email.com" autocomplete="email">
       <button id="pcta" class="pcta">Get early access</button>
-      <p class="pnote">No charge today — you get first access when Pro lands.</p>
+      <p class="pnote" id="pnote">No charge today — you get first access when Pro lands.</p>
     </div>
     <div id="pdone" class="pdone hidden">🎉 You're on the list!</div>
     <button id="pskip" class="pskip">maybe later</button>
@@ -300,15 +300,25 @@ function exportAllowed(){
 }
 
 // ── Pro door ──
+// Copy adapts to mode: with a Stripe link configured for this visitor's price,
+// the door sells a real subscription. With no link, it's a waitlist (painted door).
+function proLive(){return !!((window.CC.STRIPE_LINKS||{})[PRICE]);}
 let proShownThisSession=false;
 function openPro(source){
   $('pprice').textContent=PRICE;
   $('psub').textContent = source==='export_gate'
     ? 'You heard the difference — go Pro to save it.'
     : 'Every preset. Every knob. Unlimited saves.';
+  if(proLive()){
+    $('pcta').textContent='Go Pro — $'+PRICE+'/mo';
+    $('pnote').textContent='Secure checkout by Stripe · cancel anytime. Not ready? Your 5 free saves stay free.';
+  }else{
+    $('pcta').textContent='Get early access';
+    $('pnote').textContent='No charge today — you get first access when Pro lands.';
+  }
   $('pmask').classList.remove('hidden');
   proShownThisSession=true;
-  track('pro_shown',{source:source,price:PRICE});
+  track('pro_shown',{source:source,price:PRICE,live_checkout:proLive()});
 }
 function closePro(){$('pmask').classList.add('hidden');}
 $('proBtn').onclick=()=>openPro('header');
