@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no" />
 <meta name="theme-color" content="#dff1fb" />
 <title>ClearCast</title>
+<script>
+/* ── ClearCast config — the only two lines you ever edit ─────────────────
+   POSTHOG_KEY : PostHog → (top-left project menu) → Settings → Project → "Project API key" (starts with phc_)
+   STRIPE_LINK : Stripe → Payment Links → copy link URL (https://buy.stripe.com/...) — leave "" for waitlist mode */
+window.CC = { POSTHOG_KEY: "phc_PASTE_YOUR_KEY_HERE", POSTHOG_HOST: "https://us.i.posthog.com", STRIPE_LINK: "" };
+</script>
+<script>
+!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister identify setPersonProperties alias reset get_distinct_id group isFeatureEnabled getFeatureFlag reloadFeatureFlags onFeatureFlags opt_in_capturing opt_out_capturing set_config startSessionRecording stopSessionRecording captureException debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("PASTE")===-1){
+  posthog.init(window.CC.POSTHOG_KEY,{api_host:window.CC.POSTHOG_HOST,person_profiles:"identified_only",capture_pageview:true,capture_pageleave:true});
+}
+</script>
 <style>
   :root{
     --bg:#e6f4fc; --surface:#ffffff; --surface2:#eef8fe; --line:#d3e9f6;
@@ -110,6 +122,24 @@
   .recscore b{color:#e84f78;font-size:1.2rem}
   .sparkle{position:absolute;font-size:1.3rem;bottom:80px;animation:floatup linear infinite;pointer-events:none}
   @keyframes floatup{0%{transform:translateY(30px) scale(.5);opacity:0}15%{opacity:1}100%{transform:translateY(-140px) scale(1.15) rotate(35deg);opacity:0}}
+
+  /* ── Pro door ── */
+  .propill{border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:900;font-size:.72rem;letter-spacing:.5px;cursor:pointer;color:#fff;
+    background:linear-gradient(160deg,#ffd07a,#e84f78);box-shadow:0 4px 10px -3px rgba(232,79,120,.6),inset 0 2px 3px rgba(255,255,255,.5)}
+  .pmask{position:fixed;inset:0;z-index:150;background:rgba(41,68,81,.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
+  .pcard{background:linear-gradient(170deg,#fff,#fff6fa);border-radius:26px;max-width:400px;width:100%;padding:26px 22px;box-shadow:0 24px 60px -12px rgba(41,68,81,.5)}
+  .pcard h2{margin:0 0 2px;font-size:1.5rem;font-weight:900;color:#e84f78}
+  .pcard .psub{color:#7f9dad;font-size:.85rem;margin:0 0 12px;font-weight:600}
+  .pfeat{list-style:none;margin:0 0 14px;padding:0}
+  .pfeat li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:.92rem;font-weight:700;color:#294451}
+  .pprice{font-size:1rem;font-weight:800;color:#294451;margin:0 0 14px}
+  .pprice b{color:#37a9e1;font-size:1.35rem}
+  .pmail{width:100%;padding:14px;border:2px solid var(--line);border-radius:14px;font:inherit;font-size:1rem;margin-bottom:10px;box-sizing:border-box}
+  .pcta{width:100%;padding:16px;border:0;border-radius:16px;font:inherit;font-weight:900;font-size:1rem;color:#fff;cursor:pointer;
+    background:linear-gradient(160deg,#f7a1bf,#e84f78);box-shadow:0 8px 18px -6px rgba(232,79,120,.7)}
+  .pskip{width:100%;background:none;border:0;color:#7f9dad;font:inherit;font-weight:700;font-size:.8rem;margin-top:10px;cursor:pointer}
+  .pnote{text-align:center;color:#7f9dad;font-size:.72rem;margin-top:10px}
+  .pdone{text-align:center;font-weight:900;color:#26b98d;font-size:1.05rem;padding:22px 0}
 </style>
 </head>
 <body>
@@ -117,6 +147,7 @@
   <div class="top">
     <div class="brand">
       <h1>Clear<span class="dot">Cast</span></h1>
+      <button id="proBtn" class="propill">✨ PRO</button>
       <div class="seg"><button id="mSimple" class="on">Simple</button><button id="mPro">Studio</button></div>
     </div>
     <input type="file" id="file" accept="video/*,audio/*" hidden>
@@ -151,6 +182,27 @@
 </div>
 <div id="status">Load a clip to begin.</div>
 
+<div id="pmask" class="pmask hidden">
+  <div class="pcard">
+    <h2>🍭 ClearCast Pro</h2>
+    <p class="psub">Everything under the hood — one tap.</p>
+    <ul class="pfeat">
+      <li>📦&nbsp;<span>Batch — clean a whole shoot in one go</span></li>
+      <li>💾&nbsp;<span>Save your own presets — your sound, forever</span></li>
+      <li>🎚️&nbsp;<span>Pro preset pack — Podcast Studio, Music Master, Voice-Over</span></li>
+      <li>⚡&nbsp;<span>First access to every new tool</span></li>
+    </ul>
+    <p class="pprice">Early-bird price: <b>$<span id="pprice">6</span>/mo</b> — locked in for life</p>
+    <div id="pform">
+      <input id="pmail" class="pmail" type="email" placeholder="you@email.com" autocomplete="email">
+      <button id="pcta" class="pcta">Get early access</button>
+      <p class="pnote">No charge today — you get first access when Pro lands.</p>
+    </div>
+    <div id="pdone" class="pdone hidden">🎉 You're on the list!</div>
+    <button id="pskip" class="pskip">maybe later</button>
+  </div>
+</div>
+
 <div id="rec" class="rec hidden">
   <div class="recbanner">🍭 Baking your video… <span class="pct" id="recpct">0%</span></div>
   <div class="recbar"><i id="recfill"></i></div>
@@ -165,6 +217,35 @@ const $=(id)=>document.getElementById(id);
 const clone=(o)=>JSON.parse(JSON.stringify(o));
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const dbToLin=(db)=>Math.pow(10,db/20);
+
+// ── analytics (safe no-ops if PostHog key not set) ──
+function track(ev,props){try{if(window.posthog&&posthog.capture)posthog.capture(ev,props||{});}catch(e){}}
+// price test: each visitor is randomly assigned $6 or $9, sticky across visits
+let PRICE='6';
+try{PRICE=localStorage.getItem('cc_price')||(Math.random()<0.5?'6':'9');localStorage.setItem('cc_price',PRICE);}catch(e){}
+try{if(window.posthog&&posthog.register)posthog.register({price_variant:PRICE});}catch(e){}
+
+// ── Pro door ──
+let proShownThisSession=false;
+function openPro(source){
+  $('pprice').textContent=PRICE;
+  $('pmask').classList.remove('hidden');
+  proShownThisSession=true;
+  track('pro_shown',{source:source,price:PRICE});
+}
+function closePro(){$('pmask').classList.add('hidden');}
+$('proBtn').onclick=()=>openPro('header');
+$('pskip').onclick=()=>{closePro();track('pro_dismissed',{price:PRICE});};
+$('pmask').addEventListener('click',e=>{if(e.target===$('pmask')){closePro();track('pro_dismissed',{price:PRICE});}});
+$('pcta').onclick=()=>{
+  const em=$('pmail').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){$('pmail').style.borderColor='#f2739a';$('pmail').focus();return;}
+  try{if(window.posthog&&posthog.identify)posthog.identify(em,{email:em,price_variant:PRICE});}catch(e){}
+  track('waitlist_joined',{price:PRICE});
+  try{const l=JSON.parse(localStorage.getItem('cc_waitlist')||'[]');l.push({email:em,t:Date.now(),price:PRICE});localStorage.setItem('cc_waitlist',JSON.stringify(l));}catch(e){}
+  $('pform').classList.add('hidden');$('pdone').classList.remove('hidden');
+  if(window.CC.STRIPE_LINK){track('checkout_opened',{price:PRICE});setTimeout(()=>{location.href=window.CC.STRIPE_LINK;},700);}
+};
 
 function defaultParams(){return{
   declip:false,denoise:0,dereverb:0,gate:0, hpf:20,lpf:20000,
@@ -292,8 +373,8 @@ function draw(){ requestAnimationFrame(draw);
   mctx.fillStyle=g;mctx.fill();mctx.strokeStyle=state.bypass?'#f2739a':'#37a9e1';mctx.lineWidth=2;mctx.stroke();
 }
 
-function applyPreset(id){const d=PRESET_BY_ID[id];if(!d)return;state.params=clone(d.params);state.activePreset=id;state.baseline=clone(d.params);
-  syncPro();updateAudio();renderChips();}
+function applyPreset(id,silent){const d=PRESET_BY_ID[id];if(!d)return;state.params=clone(d.params);state.activePreset=id;state.baseline=clone(d.params);
+  syncPro();updateAudio();renderChips();if(!silent)track('preset_applied',{preset:id});}
 function edit(fn){fn(state.params);state.activePreset=null;updateAudio();renderChips();}
 function renderChips(){
   document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.id===state.activePreset));
@@ -382,7 +463,7 @@ function buildProIfNeeded(){ if(proBuilt)return;proBuilt=true;const pro=$('pro')
   add(c,proSlider('Ceiling',()=>P().ceiling,v=>P().ceiling=v,-3,0,0.1,v=>v+' dBTP'));pro.appendChild(c);
 }
 function syncPro(){if(proBuilt)proSyncers.forEach(f=>f());}
-function setFace(f){state.face=f;$('mSimple').classList.toggle('on',f==='simple');$('mPro').classList.toggle('on',f==='pro');
+function setFace(f){if(state.face!==f)track('mode_switched',{face:f});state.face=f;$('mSimple').classList.toggle('on',f==='simple');$('mPro').classList.toggle('on',f==='pro');
   $('simple').classList.toggle('hidden',f!=='simple');$('pro').classList.toggle('hidden',f!=='pro');
   $('scrub').classList.toggle('hidden',f!=='pro');
   if(f==='pro'){buildProIfNeeded();syncPro();}}
@@ -397,7 +478,8 @@ $('mSimple').onclick=()=>setFace('simple');$('mPro').onclick=()=>{setFace('pro')
 function openFile(){$('file').click();}
 video.loop=state.loop;
 $('file').onchange=e=>{const f=e.target.files[0];if(!f)return;state.file=f;video.src=URL.createObjectURL(f);video.loop=state.loop;
-  $('loadhint').classList.add('hidden');$('save').disabled=false;$('status').textContent='Loaded. Tap a preset, then Save.';renderChips();};
+  $('loadhint').classList.add('hidden');$('save').disabled=false;$('status').textContent='Loaded. Tap a preset, then Save.';renderChips();
+  track('file_loaded',{type:f.type||'unknown',size_mb:+(f.size/1048576).toFixed(1)});};
 $('load').onclick=openFile;
 $('loadhint').onclick=openFile;
 // candy sparkle + haptic on every button tap
@@ -492,11 +574,14 @@ $('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a cli
   const savHTML=$('save').innerHTML; $('save').disabled=true;$('save').textContent='Baking…';
   $('rec').classList.remove('hidden');sparkle();Game.start();
   const prog=setInterval(()=>{if(video.duration){const pct=Math.min(100,Math.round(video.currentTime/video.duration*100));$('recpct').textContent=pct+'%';$('recfill').style.width=pct+'%';}},150);
-  try{const ext=await exportRecord();$('status').textContent='Saved ClearCast.'+ext.toUpperCase();}
-  catch(e){console.warn(e);$('status').textContent='Export failed: '+((e&&e.message)||e);}
+  try{const ext=await exportRecord();$('status').textContent='Saved ClearCast.'+ext.toUpperCase();
+    track('export_completed',{ext:ext,duration_s:Math.round(video.duration||0),preset:state.activePreset||'custom'});
+    if(!proShownThisSession)setTimeout(()=>openPro('post_export'),900);}
+  catch(e){console.warn(e);$('status').textContent='Export failed: '+((e&&e.message)||e);
+    track('export_failed',{msg:String((e&&e.message)||e).slice(0,120)});}
   finally{clearInterval(prog);Game.stop();clearSparkles();$('rec').classList.add('hidden');$('save').disabled=false;$('save').innerHTML=savHTML;}};
 
-applyPreset('flat');draw();
+applyPreset('flat',true);draw();
 </script>
 </body>
 </html>
