@@ -22,7 +22,7 @@
 window.CC = {
   POSTHOG_KEY: "phc_rNYoGTiNDiayExfGRT8ktjS7gMQTv4H4CrgrXYbyNQHb",
   POSTHOG_HOST: "https://us.i.posthog.com",
-  STRIPE_LINKS: { "6": "https://buy.stripe.com/7sY6oJfe6atmeD4dhF9k400", "9": "https://buy.stripe.com/dRmfZjc1U30UcuW91p9k401" }
+  STRIPE_LINKS: { "29": "https://buy.stripe.com/fZu8wR7LE8lefH8gtR9k402" }
 };
 </script>
 <script>
@@ -233,7 +233,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
       <h2>What is ClearCast?</h2>
       <p>Free, one-tap audio repair for phone-shot video — fixes muddy, echoey, harsh, or quiet sound and bakes it straight back into your clip, still in sync. 🔒 100% private: everything runs in your browser; your video never uploads.</p>
       <p>Under the candy, each preset drives a real 10-stage studio chain — corrective EQ, compression, split-band de-essing, saturation, platform-matched loudness. Flip to Studio mode to drive every stage yourself. (A native de-noise/de-reverb engine is in testing and lands in an upcoming update.)</p>
-      <p>ClearCast is an indie project in open beta, tuned by a working musician — your first 5 saves are free on everything. Found a bug or want a feature? <a href="https://forms.gle/uMghNNNsrMZxjstA8" target="_blank" rel="noopener" class="fblink" style="color:#e84f78;font-weight:800">Tell us in 60 seconds</a> — every response is read by the person who builds this, and it decides what ships next.</p>
+      <p>ClearCast is an indie project in open beta, tuned by a working musician — your first 5 saves are free on everything (free saves carry a tiny ClearCast badge; Pro takes it off). Found a bug or want a feature? <a href="https://forms.gle/uMghNNNsrMZxjstA8" target="_blank" rel="noopener" class="fblink" style="color:#e84f78;font-weight:800">Tell us in 60 seconds</a> — every response is read by the person who builds this, and it decides what ships next.</p>
     </section>
   </div>
 </div>
@@ -269,12 +269,12 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     <h2>🍭 ClearCast Pro</h2>
     <p class="psub" id="psub">Every preset. Every knob. Unlimited saves.</p>
     <ul class="pfeat">
+      <li>🧼&nbsp;<span>No watermark — your saves come out clean</span></li>
       <li>♾️&nbsp;<span>Unlimited saves — the 5-save beta cap disappears</span></li>
       <li>🔓&nbsp;<span>Every preset + your own Studio settings, forever</span></li>
-      <li>📦&nbsp;<span>Coming next, free for members: batch cleaning + saved presets</span></li>
-      <li>⚡&nbsp;<span>Early-bird price locked in for life — you're funding an independent audio lab</span></li>
+      <li>⚡&nbsp;<span>Pay once, keep it forever — no subscription, and you're funding an independent audio lab</span></li>
     </ul>
-    <p class="pprice">Early-bird price: <b>$<span id="pprice">6</span>/mo</b> — locked in for life</p>
+    <p class="pprice">Founding price: <b>$<span id="pprice">29</span></b> one-time — yours for life</p>
     <div id="pform">
       <input id="pmail" class="pmail" type="email" placeholder="you@email.com" autocomplete="email">
       <button id="pcta" class="pcta">Get early access</button>
@@ -292,9 +292,10 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     <h2 class="ctitle">PRO UNLOCKED!</h2>
     <p class="csub">You just funded an independent audio lab. Absolute legend.</p>
     <ul class="cfeat">
+      <li>🧼 Watermark: gone. Saves come out clean</li>
       <li>♾️ Unlimited saves — the cap is GONE</li>
       <li>🔓 Every candy + every Studio knob, forever</li>
-      <li>⚡ Your early-bird price is locked for life</li>
+      <li>⚡ Paid once — yours for life, no subscription</li>
     </ul>
     <button id="cgo" class="pcta">Let's make something loud 🔊</button>
   </div>
@@ -317,9 +318,10 @@ const dbToLin=(db)=>Math.pow(10,db/20);
 
 // ── analytics (safe no-ops if PostHog key not set) ──
 function track(ev,props){try{if(window.posthog&&posthog.capture)posthog.capture(ev,props||{});}catch(e){}}
-// price test: each visitor is randomly assigned $6 or $9, sticky across visits
-let PRICE='6';
-try{PRICE=localStorage.getItem('cc_price')||(Math.random()<0.5?'6':'9');localStorage.setItem('cc_price',PRICE);}catch(e){}
+// Pricing pivot (2026-07-16, research-backed): subscription A/B killed.
+// Single one-time $29 lifetime unlock — utilities get bought, not rented.
+const PRICE='29';
+try{localStorage.setItem('cc_price',PRICE);}catch(e){}
 try{if(window.posthog&&posthog.register)posthog.register({price_variant:PRICE});}catch(e){}
 
 // ── free tier rules ──
@@ -346,8 +348,8 @@ function openPro(source){
     ? 'You heard the difference — go Pro to save it.'
     : 'Every preset. Every knob. Unlimited saves.';
   if(proLive()){
-    $('pcta').textContent='Go Pro — $'+PRICE+'/mo';
-    $('pnote').textContent='Secure checkout by Stripe · cancel anytime. Not ready? Your 5 free saves stay free.';
+    $('pcta').textContent='Unlock Pro forever — $'+PRICE;
+    $('pnote').textContent='One-time payment · secure Stripe checkout · no subscription. Not ready? Your free saves stay free.';
   }else{
     $('pcta').textContent='Get early access';
     $('pnote').textContent='No charge today — you get first access when Pro lands.';
@@ -708,6 +710,21 @@ $('ab').onclick=()=>{state.bypass=!state.bypass;$('ab').classList.toggle('on',st
 
 // ---- export: 100% client-side (MediaRecorder), no CDN, works on Vercel free ----
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href);},1000);}
+// Free exports carry a small badge (Pro removes it) — every posted clip markets the tool.
+function drawWM(g,w,h){
+  const fs=Math.max(13,Math.round(h*0.030));
+  g.save();
+  g.font='700 '+fs+'px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+  const txt='🍭 fixed with ClearCast';
+  const pad=Math.round(fs*0.55), tw=g.measureText(txt).width;
+  const rw=tw+pad*2, rh=Math.round(fs*1.7), m=Math.round(fs*0.8);
+  const x=w-rw-m, y=h-rh-m, r=rh/2;
+  g.globalAlpha=0.5;g.fillStyle='#0b1d27';
+  g.beginPath();g.moveTo(x+r,y);g.arcTo(x+rw,y,x+rw,y+rh,r);g.arcTo(x+rw,y+rh,x,y+rh,r);g.arcTo(x,y+rh,x,y,r);g.arcTo(x,y,x+rw,y,r);g.closePath();g.fill();
+  g.globalAlpha=0.95;g.fillStyle='#fff';g.textBaseline='middle';
+  g.fillText(txt,x+pad,y+rh/2+1);
+  g.restore();
+}
 function exportRecord(){
   return new Promise((resolve,reject)=>{
     const at=streamDest.stream.getAudioTracks()[0]; if(!at)return reject(new Error('no audio'));
@@ -723,7 +740,8 @@ function exportRecord(){
     const chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
     rec.onstop=()=>{const type=rec.mimeType||mime||'video/webm';const ext=type.indexOf('mp4')>=0?(hasVideo?'mp4':'m4a'):'webm';dl(new Blob(chunks,{type}),'ClearCast.'+ext);resolve(ext);};
     const wasLoop=video.loop;video.loop=false;video.currentTime=0;
-    video.play().then(()=>{ if(drawing){const d=()=>{if(!drawing)return;cx.drawImage(video,0,0,vw,vh);requestAnimationFrame(d);};d();}
+    const wm=!isPro();
+    video.play().then(()=>{ if(drawing){const d=()=>{if(!drawing)return;cx.drawImage(video,0,0,vw,vh);if(wm)drawWM(cx,vw,vh);requestAnimationFrame(d);};d();}
       rec.start(); const stop=()=>{drawing=false;if(rec.state!=='inactive')rec.stop();video.removeEventListener('ended',stop);video.loop=wasLoop;};
       video.addEventListener('ended',stop);
     }).catch(reject);
