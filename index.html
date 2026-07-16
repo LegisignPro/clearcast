@@ -4,7 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no" />
 <meta name="theme-color" content="#dff1fb" />
-<title>ClearCast</title>
+<title>ClearCast — Free One-Tap Audio Repair for Creators</title>
+<meta name="description" content="Fix muddy, echoey, quiet phone audio in your videos in one tap — free, right in your browser. Nothing uploads: your clip never leaves your device. Load, tap a preset, save.">
+<meta property="og:title" content="ClearCast — free one-tap audio repair">
+<meta property="og:description" content="Fix muddy, echoey, quiet audio in your videos in one tap. 100% in your browser — nothing uploads.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://legisignpro.github.io/clearcast/">
+<meta property="og:image" content="https://legisignpro.github.io/clearcast/og.png">
+<meta name="twitter:card" content="summary_large_image">
 <script>
 /* ── ClearCast config — the only lines you ever edit ─────────────────────
    POSTHOG_KEY  : PostHog → (top-left project menu) → Settings → Project → "Project API key" (starts with phc_)
@@ -13,7 +20,7 @@
                   paste both URLs below. Leave "" for waitlist-only mode (no charge, just emails).
                   Each visitor is auto-sent to the link matching their assigned price variant. */
 window.CC = {
-  POSTHOG_KEY: "phc_PASTE_YOUR_KEY_HERE",
+  POSTHOG_KEY: "phc_rNYoGTiNDiayExfGRT8ktjS7gMQTv4H4CrgrXYbyNQHb",
   POSTHOG_HOST: "https://us.i.posthog.com",
   STRIPE_LINKS: { "6": "", "9": "" }
 };
@@ -147,6 +154,22 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   .pskip{width:100%;background:none;border:0;color:#7f9dad;font:inherit;font-weight:700;font-size:.8rem;margin-top:10px;cursor:pointer}
   .pnote{text-align:center;color:#7f9dad;font-size:.72rem;margin-top:10px}
   .pdone{text-align:center;font-weight:900;color:#26b98d;font-size:1.05rem;padding:22px 0}
+
+  /* ── splash / help ── */
+  .helpb{border:0;border-radius:50%;width:30px;height:30px;font:inherit;font-weight:900;font-size:.85rem;cursor:pointer;color:#fff;flex:0 0 auto;
+    background:linear-gradient(160deg,#8fd3f4,#37a9e1);box-shadow:0 3px 8px -2px rgba(55,169,225,.6),inset 0 2px 3px rgba(255,255,255,.5)}
+  .steps{list-style:none;margin:0 0 16px;padding:0;counter-reset:st}
+  .steps li{position:relative;padding:8px 0 8px 44px;font-size:.92rem;font-weight:600;color:#294451;counter-increment:st}
+  .steps li::before{content:counter(st);position:absolute;left:0;top:6px;width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;
+    background:linear-gradient(160deg,#f7a1bf,#e84f78);box-shadow:0 3px 8px -2px rgba(232,79,120,.55)}
+  .steps b{color:#e84f78}
+  .privline{text-align:center;font-size:.78rem;font-weight:700;color:#26b98d;margin:0 0 14px}
+  .chip .lockmark{position:absolute;top:6px;right:8px;font-size:.7rem;opacity:.9}
+  #about{margin:26px 0 8px;padding:18px;background:rgba(255,255,255,.6);border:1.5px solid var(--line);border-radius:var(--radius)}
+  #about h2{font-size:1rem;font-weight:800;color:var(--accent);margin:0 0 8px}
+  #about h3{font-size:.85rem;font-weight:800;color:#294451;margin:14px 0 6px}
+  #about p, #about li{font-size:.82rem;color:#5b7a8a;line-height:1.55;margin:0 0 8px}
 </style>
 </head>
 <body>
@@ -154,6 +177,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   <div class="top">
     <div class="brand">
       <h1>Clear<span class="dot">Cast</span></h1>
+      <button id="helpBtn" class="helpb" title="How it works">?</button>
       <button id="proBtn" class="propill">✨ PRO</button>
       <div class="seg"><button id="mSimple" class="on">Simple</button><button id="mPro">Studio</button></div>
     </div>
@@ -175,6 +199,19 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
       <div class="chips" id="chips"></div>
     </div>
     <div id="pro" class="hidden"></div>
+
+    <section id="about">
+      <h2>What is ClearCast?</h2>
+      <p>ClearCast is a free, one-tap audio repair tool for creators. It fixes muddy audio, removes echo and boxiness, tames harsh phone-mic sound, and makes quiet videos loud enough for TikTok, Reels, YouTube, and podcasts — using a full studio chain (EQ, compression, de-essing, loudness matching) hidden behind candy-simple presets.</p>
+      <h3>How to fix your audio in four taps</h3>
+      <ol>
+        <li><b>Load</b> — pick any video or audio clip from your phone or computer.</li>
+        <li>Tap a preset — Podcast Voice, Phone Rescue, Fix Muddy, Make it Loud, and more.</li>
+        <li><b>Play</b> &amp; A/B — hear before vs after live. Flip to Studio for every knob under the hood.</li>
+        <li><b>Save</b> — bakes the repaired audio into your video, ready to post.</li>
+      </ol>
+      <p>100% private: everything runs in your browser. Your clip never uploads, never touches a server, and works even offline once loaded.</p>
+    </section>
   </div>
 </div>
 
@@ -189,15 +226,30 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
 </div>
 <div id="status">Load a clip to begin.</div>
 
+<div id="smask" class="pmask hidden">
+  <div class="pcard">
+    <h2>🍭 ClearCast</h2>
+    <p class="psub">Sounds like you hired an audio engineer.</p>
+    <ol class="steps">
+      <li><b>Load</b> — pick any video or audio clip.</li>
+      <li>Tap a candy — each preset is a full studio chain.</li>
+      <li><b>Play</b> &amp; A/B — hear before vs after live. Pros: flip to Studio for every knob.</li>
+      <li><b>Save</b> — bakes the new audio in, ready to post. 🎮</li>
+    </ol>
+    <p class="privline">🔒 Nothing uploads — your clip never leaves your device.</p>
+    <button id="sgo" class="pcta">Let's go 🍬</button>
+  </div>
+</div>
+
 <div id="pmask" class="pmask hidden">
   <div class="pcard">
     <h2>🍭 ClearCast Pro</h2>
-    <p class="psub">Everything under the hood — one tap.</p>
+    <p class="psub" id="psub">Every preset. Every knob. Unlimited saves.</p>
     <ul class="pfeat">
-      <li>📦&nbsp;<span>Batch — clean a whole shoot in one go</span></li>
-      <li>💾&nbsp;<span>Save your own presets — your sound, forever</span></li>
-      <li>🎚️&nbsp;<span>Pro preset pack — Podcast Studio, Music Master, Voice-Over</span></li>
-      <li>⚡&nbsp;<span>First access to every new tool</span></li>
+      <li>🔓&nbsp;<span>Export with every preset + your own Studio settings</span></li>
+      <li>♾️&nbsp;<span>Unlimited saves — no caps, ever</span></li>
+      <li>📦&nbsp;<span>Coming next, free for members: batch cleaning + saved presets</span></li>
+      <li>⚡&nbsp;<span>Early-bird price locked in for life</span></li>
     </ul>
     <p class="pprice">Early-bird price: <b>$<span id="pprice">6</span>/mo</b> — locked in for life</p>
     <div id="pform">
@@ -232,10 +284,29 @@ let PRICE='6';
 try{PRICE=localStorage.getItem('cc_price')||(Math.random()<0.5?'6':'9');localStorage.setItem('cc_price',PRICE);}catch(e){}
 try{if(window.posthog&&posthog.register)posthog.register({price_variant:PRICE});}catch(e){}
 
+// ── free tier rules ──
+// Phone Rescue + Podcast Voice export free, up to FREE_EXPORT_LIMIT total saves.
+// Everything is fully previewable/tweakable live; only Save is gated.
+const FREE_PRESETS=['phone','podcast'];
+const FREE_EXPORT_LIMIT=5;
+function isPro(){try{return localStorage.getItem('cc_pro')==='1';}catch(e){return false;}}
+function exportsUsed(){try{return parseInt(localStorage.getItem('cc_exports')||'0',10)||0;}catch(e){return 0;}}
+function bumpExports(){try{localStorage.setItem('cc_exports',String(exportsUsed()+1));}catch(e){}}
+function exportAllowed(){
+  if(isPro())return{ok:true};
+  const preset=state.activePreset;
+  if(!FREE_PRESETS.includes(preset))return{ok:false,why:preset?'preset_locked':'custom_locked'};
+  if(exportsUsed()>=FREE_EXPORT_LIMIT)return{ok:false,why:'limit_reached'};
+  return{ok:true,free:true};
+}
+
 // ── Pro door ──
 let proShownThisSession=false;
 function openPro(source){
   $('pprice').textContent=PRICE;
+  $('psub').textContent = source==='export_gate'
+    ? 'You heard the difference — go Pro to save it.'
+    : 'Every preset. Every knob. Unlimited saves.';
   $('pmask').classList.remove('hidden');
   proShownThisSession=true;
   track('pro_shown',{source:source,price:PRICE});
@@ -265,9 +336,16 @@ $('pcta').onclick=()=>{
 // https://legisignpro.github.io/clearcast/?checkout=success so this fires.
 if(location.search.indexOf('checkout=success')>=0){
   track('purchase_completed',{price:PRICE});
+  try{localStorage.setItem('cc_pro','1');}catch(e){}
   try{history.replaceState(null,'',location.pathname);}catch(e){}
-  $('status').textContent='🎉 Welcome to ClearCast Pro! Early access is on its way to your email.';
+  $('status').textContent='🎉 Welcome to ClearCast Pro — everything is unlocked on this device!';
 }
+
+// ── splash (first visit) + help button ──
+function openSplash(src){$('smask').classList.remove('hidden');track('splash_shown',{source:src});}
+$('sgo').onclick=()=>{$('smask').classList.add('hidden');try{localStorage.setItem('cc_seen_splash','1');}catch(e){}track('splash_dismissed');};
+$('helpBtn').onclick=()=>openSplash('help');
+try{if(!localStorage.getItem('cc_seen_splash'))openSplash('first_visit');}catch(e){openSplash('first_visit');}
 
 function defaultParams(){return{
   declip:false,denoise:0,dereverb:0,gate:0, hpf:20,lpf:20000,
@@ -405,7 +483,9 @@ function renderChips(){
 
 const chips=$('chips');
 PRESETS.forEach(p=>{const b=document.createElement('button');b.className='chip';b.dataset.id=p.id;b.textContent=p.label;
-  if(p.color){b.style.setProperty('--c1',p.color[0]);b.style.setProperty('--c2',p.color[1]);}b.onclick=()=>applyPreset(p.id);chips.appendChild(b);});
+  if(p.color){b.style.setProperty('--c1',p.color[0]);b.style.setProperty('--c2',p.color[1]);}
+  if(!FREE_PRESETS.includes(p.id)&&p.id!=='flat'&&!isPro()){const m=document.createElement('span');m.className='lockmark';m.textContent='✨';m.title='Preview free · export with Pro';b.appendChild(m);}
+  b.onclick=()=>applyPreset(p.id);chips.appendChild(b);});
 
 // ---- Studio ----
 let proBuilt=false; const proSyncers=[];
@@ -592,13 +672,26 @@ function clearSparkles(){$('rec').querySelectorAll('.sparkle').forEach(s=>s.remo
 
 $('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a clip first.';return;}
   if(state.bypass){$('status').textContent='Turn off A/B before saving.';return;}
+  // ── the gate: preview is always free, saving is where Pro begins ──
+  const gate=exportAllowed();
+  if(!gate.ok){
+    track('export_blocked',{why:gate.why,preset:state.activePreset||'custom',exports_used:exportsUsed(),price:PRICE});
+    openPro('export_gate');
+    $('status').textContent = gate.why==='limit_reached'
+      ? 'Free saves used up — go Pro for unlimited.'
+      : 'This preset previews free — go Pro to save with it.';
+    return;
+  }
   if(!state.started)buildGraph(); if(ctx&&ctx.state==='suspended')await ctx.resume();
   const savHTML=$('save').innerHTML; $('save').disabled=true;$('save').textContent='Baking…';
   $('rec').classList.remove('hidden');sparkle();Game.start();
   const prog=setInterval(()=>{if(video.duration){const pct=Math.min(100,Math.round(video.currentTime/video.duration*100));$('recpct').textContent=pct+'%';$('recfill').style.width=pct+'%';}},150);
-  try{const ext=await exportRecord();$('status').textContent='Saved ClearCast.'+ext.toUpperCase();
-    track('export_completed',{ext:ext,duration_s:Math.round(video.duration||0),preset:state.activePreset||'custom'});
-    if(!proShownThisSession)setTimeout(()=>openPro('post_export'),900);}
+  try{const ext=await exportRecord();
+    let msg='Saved ClearCast.'+ext.toUpperCase();
+    if(gate.free){bumpExports();const left=Math.max(0,FREE_EXPORT_LIMIT-exportsUsed());msg+=' · '+left+' free save'+(left===1?'':'s')+' left';}
+    $('status').textContent=msg;
+    track('export_completed',{ext:ext,duration_s:Math.round(video.duration||0),preset:state.activePreset||'custom',free_exports_left:gate.free?Math.max(0,FREE_EXPORT_LIMIT-exportsUsed()):null});
+    if(!proShownThisSession&&!isPro())setTimeout(()=>openPro('post_export'),900);}
   catch(e){console.warn(e);$('status').textContent='Export failed: '+((e&&e.message)||e);
     track('export_failed',{msg:String((e&&e.message)||e).slice(0,120)});}
   finally{clearInterval(prog);Game.stop();clearSparkles();$('rec').classList.add('hidden');$('save').disabled=false;$('save').innerHTML=savHTML;}};
