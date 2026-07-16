@@ -6,10 +6,17 @@
 <meta name="theme-color" content="#dff1fb" />
 <title>ClearCast</title>
 <script>
-/* ── ClearCast config — the only two lines you ever edit ─────────────────
-   POSTHOG_KEY : PostHog → (top-left project menu) → Settings → Project → "Project API key" (starts with phc_)
-   STRIPE_LINK : Stripe → Payment Links → copy link URL (https://buy.stripe.com/...) — leave "" for waitlist mode */
-window.CC = { POSTHOG_KEY: "phc_PASTE_YOUR_KEY_HERE", POSTHOG_HOST: "https://us.i.posthog.com", STRIPE_LINK: "" };
+/* ── ClearCast config — the only lines you ever edit ─────────────────────
+   POSTHOG_KEY  : PostHog → (top-left project menu) → Settings → Project → "Project API key" (starts with phc_)
+   STRIPE_LINKS : one Stripe Payment Link per test price. In Stripe: Products → "ClearCast Pro" →
+                  add TWO recurring prices ($6/mo and $9/mo) → create a Payment Link for each →
+                  paste both URLs below. Leave "" for waitlist-only mode (no charge, just emails).
+                  Each visitor is auto-sent to the link matching their assigned price variant. */
+window.CC = {
+  POSTHOG_KEY: "phc_PASTE_YOUR_KEY_HERE",
+  POSTHOG_HOST: "https://us.i.posthog.com",
+  STRIPE_LINKS: { "6": "", "9": "" }
+};
 </script>
 <script>
 !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister identify setPersonProperties alias reset get_distinct_id group isFeatureEnabled getFeatureFlag reloadFeatureFlags onFeatureFlags opt_in_capturing opt_out_capturing set_config startSessionRecording stopSessionRecording captureException debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
@@ -244,8 +251,23 @@ $('pcta').onclick=()=>{
   track('waitlist_joined',{price:PRICE});
   try{const l=JSON.parse(localStorage.getItem('cc_waitlist')||'[]');l.push({email:em,t:Date.now(),price:PRICE});localStorage.setItem('cc_waitlist',JSON.stringify(l));}catch(e){}
   $('pform').classList.add('hidden');$('pdone').classList.remove('hidden');
-  if(window.CC.STRIPE_LINK){track('checkout_opened',{price:PRICE});setTimeout(()=>{location.href=window.CC.STRIPE_LINK;},700);}
+  // If a Stripe Payment Link exists for THIS visitor's price variant, send them to real checkout
+  // with their email prefilled. No link configured = painted-door/waitlist mode.
+  const link=(window.CC.STRIPE_LINKS||{})[PRICE]||"";
+  if(link){
+    track('checkout_opened',{price:PRICE});
+    $('pdone').textContent='🍬 Taking you to secure checkout…';
+    setTimeout(()=>{location.href=link+(link.indexOf('?')>=0?'&':'?')+'prefilled_email='+encodeURIComponent(em);},700);
+  }
 };
+
+// Returning from Stripe: set the Payment Link's after-payment redirect to
+// https://legisignpro.github.io/clearcast/?checkout=success so this fires.
+if(location.search.indexOf('checkout=success')>=0){
+  track('purchase_completed',{price:PRICE});
+  try{history.replaceState(null,'',location.pathname);}catch(e){}
+  $('status').textContent='🎉 Welcome to ClearCast Pro! Early access is on its way to your email.';
+}
 
 function defaultParams(){return{
   declip:false,denoise:0,dereverb:0,gate:0, hpf:20,lpf:20000,
