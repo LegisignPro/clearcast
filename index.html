@@ -209,9 +209,9 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
       <p>The old way takes three apps: split the audio out of your video, clean it up in an editor, then re-import and re-align it frame by frame. ClearCast collapses all of that into one step — the repaired sound bakes straight back into your video, still in sync, ready to post.</p>
       <p>100% private: everything runs in your browser. Your clip never uploads, never touches a server, and works even offline once loaded.</p>
       <h3>What's under the hood</h3>
-      <p>Every preset drives a 14-stage chain: de-clip → de-noise → de-reverb → gate → corrective EQ → parametric EQ → compression → de-esser → tone → distressor → saturation → air → stereo width → platform loudness with true-peak limiting. Most "audio enhancer" apps are one filter and a limiter; this is the architecture of a real mixing chain. Flip to Studio mode to see — and drive — every stage yourself.</p>
+      <p>Every preset drives a 10-stage mixing chain, live: corrective EQ → parametric EQ → compression → split-band de-esser → tone shaping → FET-style distressor → tube/tape saturation → air → stereo width → platform loudness with true-peak limiting. Most "audio enhancer" apps are one filter and a limiter; this is the architecture of a real mixing chain. Flip to Studio mode to see — and drive — every stage yourself. A native restoration engine (de-clip, de-noise, de-reverb, gate) is built and in testing — it lands in an upcoming update.</p>
       <h3>Where ClearCast is at (honestly)</h3>
-      <p>ClearCast is an independent audio project in open beta. Behind each candy preset is a hand-tuned, studio-grade signal chain — restoration, corrective EQ, compression, de-essing, harmonic color, and loudness matched to each platform — tuned by a working musician who got tired of great takes ruined by phone audio. The repair engine works today; batch cleaning, saved presets, and more are on the roadmap, built in the order testers ask. Your first 5 saves are free with every preset and every Studio setting while we tune the experience.</p>
+      <p>ClearCast is an independent audio project in open beta. Behind each candy preset is a hand-tuned, studio-grade signal chain — corrective EQ, compression, de-essing, harmonic color, and loudness matched to each platform — tuned by a working musician who got tired of great takes ruined by phone audio. The repair engine works today; batch cleaning, saved presets, and more are on the roadmap, built in the order testers ask. Your first 5 saves are free with every preset and every Studio setting while we tune the experience.</p>
       <p>Found a bug, hated something, want a feature? <a href="mailto:contact.legisign@gmail.com?subject=ClearCast%20feedback" class="fblink" style="color:#e84f78;font-weight:800">Email us directly</a> — every message gets read by the person who builds this, and beta feedback genuinely decides what ships next.</p>
     </section>
   </div>
@@ -364,9 +364,9 @@ const mk=(o)=>Object.assign(defaultParams(),o);
 // creator by far), universal wants next, niche/pro last, Reset (a utility) at the end.
 const PRESETS=[
   {id:'phone',  label:'Phone Rescue',     color:['#38c1a6','#12a594'], params:mk({declip:true,denoise:.5,dereverb:.25,gate:.25,hpf:85,lpf:14000,
-     fix:[{freq:400,q:1.5,gain:-3},{freq:800,q:1.2,gain:-2},{freq:3800,q:4,gain:-5}],comp:{threshold:-22,ratio:4,attack:5,release:120,knee:6,makeup:5},
+     fix:[{freq:400,q:1.5,gain:-3},{freq:800,q:1.2,gain:-2},{freq:3800,q:2.5,gain:-5}],comp:{threshold:-22,ratio:4,attack:5,release:120,knee:6,makeup:5},
      deess:{amount:45,freq:6000},tone:{warmth:3,presence:1},sat:{drive:20,mode:'tube'},airAmt:25,target:'reels'})},
-  {id:'loud',   label:'Make it Loud',     color:['#ff5a5f','#e11d48'], params:mk({hpf:70,lpf:17000,
+  {id:'loud',   label:'Make it Loud',   /* broadband slam: heavy ratio + makeup into the limiter */     color:['#ff5a5f','#e11d48'], params:mk({hpf:70,lpf:17000,
      fix:[{freq:250,q:1.2,gain:0},{freq:700,q:1.2,gain:0},{freq:4000,q:2,gain:-1}],comp:{threshold:-28,ratio:8,attack:5,release:120,knee:4,makeup:8},
      dist:{amount:25,ratio:4,mode:'dist2'},tone:{presence:1,warmth:1},airAmt:15,target:'tiktok'})},
   {id:'muddy',  label:'Fix Muddy',        color:['#9b7bff','#7c3aed'], params:mk({hpf:100,lpf:18000,
@@ -375,7 +375,7 @@ const PRESETS=[
   {id:'vlog',   label:'Vlog / Talking',   color:['#ff9a52','#f97316'], params:mk({denoise:.4,dereverb:.2,gate:.2,hpf:80,lpf:16000,
      fix:[{freq:300,q:1.2,gain:-2},{freq:900,q:1.2,gain:-1},{freq:4000,q:2,gain:0}],comp:{threshold:-22,ratio:4,attack:8,release:150,knee:6,makeup:5},
      deess:{amount:30,freq:6800},tone:{warmth:1,presence:3},airAmt:30,sat:{drive:12,mode:'tube'},target:'reels'})},
-  {id:'podcast',label:'Podcast Voice',    color:['#ff6f91','#e84f78'], params:mk({declip:true,denoise:.5,dereverb:.3,gate:.3,hpf:90,lpf:15000,
+  {id:'podcast',label:'Podcast Voice',    color:['#ff6f91','#e84f78'], params:mk({declip:true,denoise:.5,dereverb:.3,gate:.3,hpf:85,lpf:15000,
      fix:[{freq:300,q:1.4,gain:-3},{freq:800,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:6,attack:5,release:150,knee:6,makeup:7},
      deess:{amount:40,freq:6500},tone:{warmth:2,presence:2},dist:{amount:15,ratio:4,mode:'dist2'},airAmt:25,target:'podcast'})},
   {id:'interview',label:'Interview',      color:['#33bcd6','#159cbb'], params:mk({declip:true,denoise:.6,dereverb:.35,gate:.4,hpf:95,lpf:14000,
@@ -504,7 +504,7 @@ function card(title,sub,badge,key){const c=document.createElement('div');c.class
   return c;}
 function add(c,el){if(el._sync)proSyncers.push(el._sync);c.appendChild(el);}
 function buildProIfNeeded(){ if(proBuilt)return;proBuilt=true;const pro=$('pro');const P=()=>state.params;
-  let c=card('Restoration','Repair before you shape.','soon','rest');
+  let c=card('Restoration','Repair before you shape — native engine in testing, these controls go live with it.','soon','rest');
   const dc=document.createElement('button');dc.className='byp';dc.textContent='De-Clip';dc.style.marginBottom='10px';
   dc.onclick=()=>{P().declip=!P().declip;dc.classList.toggle('on',P().declip);state.activePreset=null;updateAudio();renderChips();};
   proSyncers.push(()=>dc.classList.toggle('on',P().declip));c.appendChild(dc);
