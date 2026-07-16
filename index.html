@@ -124,6 +124,13 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   .scrub input{width:100%;height:6px}
   /* status strip retired — it overlapped content; JS still writes here but it never renders */
   #status{display:none!important}
+
+  /* saves counter + share row (in document flow — can't overlap anything) */
+  #savesrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 6px;padding:10px 14px;
+    background:rgba(255,255,255,.65);border:1.5px solid var(--line);border-radius:16px}
+  #savesleft{font-size:.8rem;font-weight:800;color:#294451}
+  #sharebtn{border:0;border-radius:999px;padding:9px 15px;font:inherit;font-weight:800;font-size:.74rem;color:#fff;cursor:pointer;
+    background:linear-gradient(160deg,#7ce0c0,#26b98d);box-shadow:0 4px 10px -3px rgba(38,185,141,.6),inset 0 2px 3px rgba(255,255,255,.5)}
   .hidden{display:none!important}
 
   /* recording overlay + candy brickbreaker */
@@ -216,6 +223,11 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
       <div class="chips" id="chips"></div>
     </div>
     <div id="pro" class="hidden"></div>
+
+    <div id="savesrow">
+      <span id="savesleft"></span>
+      <button id="sharebtn">Share → +1 save</button>
+    </div>
 
     <section id="about">
       <h2>What is ClearCast?</h2>
@@ -386,19 +398,32 @@ const SHARE_URL='https://legisignpro.github.io/clearcast/?src=friend';
 const BONUS_MAX=3;
 function bonusSaves(){try{return Math.min(BONUS_MAX,parseInt(localStorage.getItem('cc_bonus')||'0',10)||0);}catch(e){return 0;}}
 function saveLimit(){return FREE_EXPORT_LIMIT+bonusSaves();}
+// Saves counter + share row. Note Pro never travels with a share: cc_pro lives
+// only in the buyer's localStorage and SHARE_URL is a clean ?src=friend link.
+function renderSaves(){
+  const el=$('savesleft'),btn=$('sharebtn');
+  if(isPro()){el.textContent='♾️ Pro — unlimited saves';btn.textContent='🍬 Share ClearCast';return;}
+  const left=Math.max(0,saveLimit()-exportsUsed());
+  el.textContent='🍬 '+left+' free save'+(left===1?'':'s')+' left';
+  btn.textContent=bonusSaves()<BONUS_MAX?'Share → +1 save':'🍬 Share ClearCast';
+}
 async function shareApp(source){
-  let ok=false;
+  let ok=false,copied=false;
   try{
     if(navigator.share){await navigator.share({title:'ClearCast — free 1-tap audio repair',text:'Fixes muddy/echoey phone audio in one tap, right in your browser. Nothing uploads.',url:SHARE_URL});ok=true;}
-    else{await navigator.clipboard.writeText(SHARE_URL);ok=true;$('status').textContent='🔗 Link copied — send it to a friend!';}
+    else{await navigator.clipboard.writeText(SHARE_URL);ok=true;copied=true;}
   }catch(e){/* share sheet dismissed */}
   if(!ok)return;
   let granted=false;
   if(!isPro()&&bonusSaves()<BONUS_MAX){try{localStorage.setItem('cc_bonus',String(bonusSaves()+1));granted=true;}catch(e){}}
   track('share_clicked',{source:source,bonus_granted:granted,bonus_total:bonusSaves()});
-  if(granted){$('status').textContent='🍬 +1 bonus save unlocked ('+bonusSaves()+'/'+BONUS_MAX+') — thanks for spreading the word!';confettiBoom(35);}
+  if(granted)confettiBoom(35);
+  const btn=$('sharebtn');
+  btn.textContent=granted?'+1 save added! 🍬':(copied?'🔗 Link copied!':'Thanks! 🍬');
+  setTimeout(renderSaves,2200);
 }
 $('pshare').onclick=()=>{closePro();shareApp('pro_modal');};
+$('sharebtn').onclick=()=>shareApp('saves_row');
 
 // Returning from Stripe: set the Payment Link's after-payment redirect to
 // https://legisignpro.github.io/clearcast/?checkout=success so this fires.
@@ -409,6 +434,7 @@ if(location.search.indexOf('checkout=success')>=0){
   $('cmask').classList.remove('hidden');
   confettiBoom(90);setTimeout(()=>confettiBoom(70),900);setTimeout(()=>confettiBoom(70),1900);
   try{localStorage.setItem('cc_seen_splash','1');}catch(e){}
+  renderSaves();
 }
 
 $('cgo').onclick=()=>{$('cmask').classList.add('hidden');confettiBoom(40);};
@@ -770,6 +796,7 @@ $('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a cli
   try{const ext=await exportRecord();
     let msg='Saved ClearCast.'+ext.toUpperCase();
     if(gate.free){bumpExports();const left=Math.max(0,saveLimit()-exportsUsed());msg+=' · '+left+' free save'+(left===1?'':'s')+' left';}
+    renderSaves();
     $('status').textContent=msg;
     track('export_completed',{ext:ext,duration_s:Math.round(video.duration||0),preset:state.activePreset||'custom',free_exports_left:gate.free?Math.max(0,saveLimit()-exportsUsed()):null});
     if(!proShownThisSession&&!isPro())setTimeout(()=>openPro('post_export'),900);}
@@ -777,7 +804,7 @@ $('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a cli
     track('export_failed',{msg:String((e&&e.message)||e).slice(0,120)});}
   finally{clearInterval(prog);Game.stop();clearSparkles();$('rec').classList.add('hidden');$('save').disabled=false;$('save').innerHTML=savHTML;}};
 
-applyPreset('flat',true);draw();
+applyPreset('flat',true);renderSaves();draw();
 </script>
 </body>
 </html>
