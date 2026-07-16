@@ -213,8 +213,10 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
         <li><b>Save</b> — bakes the repaired audio into your video, ready to post.</li>
       </ol>
       <p>100% private: everything runs in your browser. Your clip never uploads, never touches a server, and works even offline once loaded.</p>
+      <h3>What's under the hood</h3>
+      <p>Every preset drives a 14-stage chain: de-clip → de-noise → de-reverb → gate → corrective EQ → parametric EQ → compression → de-esser → tone → distressor → saturation → air → stereo width → platform loudness with true-peak limiting. Most "audio enhancer" apps are one filter and a limiter; this is the architecture of a real mixing chain. Flip to Studio mode to see — and drive — every stage yourself.</p>
       <h3>Where ClearCast is at (honestly)</h3>
-      <p>ClearCast is in open beta, built and shipped by one independent developer — a bassist who got tired of great takes ruined by phone audio. The repair engine you're using works today; batch cleaning, saved presets, and more are on the roadmap and get built in the order testers ask for them. Your first 5 saves are free with every preset and every Studio setting while we tune the experience.</p>
+      <p>ClearCast is an independent audio project in open beta. Behind each candy preset is a hand-tuned, studio-grade signal chain — restoration, corrective EQ, compression, de-essing, harmonic color, and loudness matched to each platform — tuned by a working musician who got tired of great takes ruined by phone audio. The repair engine works today; batch cleaning, saved presets, and more are on the roadmap, built in the order testers ask. Your first 5 saves are free with every preset and every Studio setting while we tune the experience.</p>
       <p>Found a bug, hated something, want a feature? <a href="mailto:contact.legisign@gmail.com?subject=ClearCast%20feedback" class="fblink" style="color:#e84f78;font-weight:800">Email us directly</a> — every message gets read by the person who builds this, and beta feedback genuinely decides what ships next.</p>
     </section>
   </div>
@@ -234,7 +236,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
 <div id="smask" class="pmask hidden">
   <div class="pcard">
     <h2>🍭 ClearCast</h2>
-    <p class="psub">Sounds like you hired an audio engineer.</p>
+    <p class="psub">A full studio signal chain in every candy.</p>
     <ol class="steps">
       <li><b>Load</b> — pick any video or audio clip.</li>
       <li>Tap a candy — each preset is a full studio chain.</li>
@@ -255,7 +257,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
       <li>♾️&nbsp;<span>Unlimited saves — the 5-save beta cap disappears</span></li>
       <li>🔓&nbsp;<span>Every preset + your own Studio settings, forever</span></li>
       <li>📦&nbsp;<span>Coming next, free for members: batch cleaning + saved presets</span></li>
-      <li>⚡&nbsp;<span>Early-bird price locked in for life — you're funding an indie build</span></li>
+      <li>⚡&nbsp;<span>Early-bird price locked in for life — you're funding an independent audio lab</span></li>
     </ul>
     <p class="pprice">Early-bird price: <b>$<span id="pprice">6</span>/mo</b> — locked in for life</p>
     <div id="pform">
