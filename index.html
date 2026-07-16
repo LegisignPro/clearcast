@@ -131,6 +131,9 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   #savesleft{font-size:.8rem;font-weight:800;color:#294451}
   #sharebtn{border:0;border-radius:999px;padding:9px 15px;font:inherit;font-weight:800;font-size:.74rem;color:#fff;cursor:pointer;
     background:linear-gradient(160deg,#7ce0c0,#26b98d);box-shadow:0 4px 10px -3px rgba(38,185,141,.6),inset 0 2px 3px rgba(255,255,255,.5)}
+  #cmpbtn{border:0;border-radius:999px;padding:9px 15px;font:inherit;font-weight:800;font-size:.74rem;color:#fff;cursor:pointer;
+    background:linear-gradient(160deg,#ffd07a,#f0a53d);box-shadow:0 4px 10px -3px rgba(240,165,61,.6),inset 0 2px 3px rgba(255,255,255,.5)}
+  #cmpbtn:disabled{opacity:.45;cursor:default}
   .hidden{display:none!important}
 
   /* recording overlay + candy brickbreaker */
@@ -226,6 +229,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
 
     <div id="savesrow">
       <span id="savesleft"></span>
+      <button id="cmpbtn" disabled title="Load a clip first">🎬 Before/After</button>
       <button id="sharebtn">Share → +1 save</button>
     </div>
 
@@ -682,7 +686,7 @@ $('mSimple').onclick=()=>setFace('simple');$('mPro').onclick=()=>{setFace('pro')
 function openFile(){$('file').click();}
 video.loop=state.loop;
 $('file').onchange=e=>{const f=e.target.files[0];if(!f)return;state.file=f;video.src=URL.createObjectURL(f);video.loop=state.loop;
-  $('loadhint').classList.add('hidden');$('save').disabled=false;
+  $('loadhint').classList.add('hidden');$('save').disabled=false;$('cmpbtn').disabled=false;$('cmpbtn').title='Make a shareable before/after clip';
   track('file_loaded',{type:f.type||'unknown',size_mb:+(f.size/1048576).toFixed(1)});
   // zero-click wow: apply the hero preset and start playing immediately —
   // the first thing a new user hears is their clip, fixed.
@@ -725,6 +729,62 @@ function drawWM(g,w,h){
   g.fillText(txt,x+pad,y+rh/2+1);
   g.restore();
 }
+// Before/After comparison clip: plays the opening seconds twice — first with the
+// raw (bypassed) audio under a BEFORE banner, then the fixed audio under AFTER.
+// Free, unlimited, doesn't touch the save cap, always watermarked: it exists to
+// be posted. Users make our TikToks for us.
+function exportCompare(){
+  return new Promise((resolve,reject)=>{
+    const at=streamDest.stream.getAudioTracks()[0]; if(!at)return reject(new Error('no audio'));
+    if(!((video.videoWidth||0)>0))return reject(new Error('Video clips only'));
+    const vw=video.videoWidth,vh=video.videoHeight;
+    const cvs=document.createElement('canvas');cvs.width=vw;cvs.height=vh;const g2=cvs.getContext('2d');
+    const out=new MediaStream();cvs.captureStream(30).getVideoTracks().forEach(t=>out.addTrack(t));out.addTrack(at);
+    const mimes=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=h264,aac','video/mp4','video/webm;codecs=vp9,opus','video/webm'];
+    const mime=mimes.find(m=>MediaRecorder.isTypeSupported(m))||'';
+    let rec;try{rec=new MediaRecorder(out,mime?{mimeType:mime,videoBitsPerSecond:16000000,audioBitsPerSecond:256000}:undefined);}catch(e){return reject(e);}
+    const chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+    rec.onstop=()=>{const type=rec.mimeType||mime||'video/webm';const ext=type.indexOf('mp4')>=0?'mp4':'webm';
+      dl(new Blob(chunks,{type}),'ClearCast-BeforeAfter.'+ext);resolve(ext);};
+    const seg=Math.min(7,Math.max(1.5,(video.duration||7)-0.05));
+    let phase='before',drawing=true;
+    const wasLoop=video.loop,wasBypass=state.bypass;video.loop=false;
+    state.bypass=true;updateAudio();video.currentTime=0;
+    function banner(g){
+      const fs=Math.max(22,Math.round(vh*0.05)),y=Math.round(vh*0.12);
+      g.save();g.font='900 '+fs+'px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';g.textAlign='center';
+      const txt=phase==='before'?'BEFORE 🙉':'AFTER ✨';
+      const tw=g.measureText(txt).width,pad=fs*0.6;
+      g.globalAlpha=0.65;g.fillStyle=phase==='before'?'#8c2f42':'#1c8a68';
+      g.fillRect(vw/2-tw/2-pad,y-fs*0.9,tw+pad*2,fs*1.6);
+      g.globalAlpha=1;g.fillStyle='#fff';g.fillText(txt,vw/2,y+fs*0.3);
+      g.restore();
+      drawWM(g,vw,vh);
+    }
+    const d=()=>{if(!drawing)return;g2.drawImage(video,0,0,vw,vh);banner(g2);requestAnimationFrame(d);};
+    function finish(){if(!drawing)return;drawing=false;video.removeEventListener('ended',onEnded);
+      if(rec.state!=='inactive')rec.stop();video.pause();video.loop=wasLoop;state.bypass=wasBypass;updateAudio();}
+    function toAfter(){phase='after';state.bypass=false;updateAudio();video.currentTime=0;
+      video.play().catch(()=>finish());}
+    const onEnded=()=>{if(phase==='before')toAfter();else finish();};
+    video.addEventListener('ended',onEnded);
+    const tick=()=>{if(!drawing)return;
+      if(phase==='before'&&video.currentTime>=seg)toAfter();
+      else if(phase==='after'&&video.currentTime>=seg){finish();return;}
+      requestAnimationFrame(tick);};
+    video.play().then(()=>{d();rec.start();tick();}).catch(e=>{drawing=false;reject(e);});
+  });
+}
+$('cmpbtn').onclick=async()=>{
+  if(!state.file)return;
+  if(!state.started)buildGraph(); if(ctx&&ctx.state==='suspended')await ctx.resume();
+  const btn=$('cmpbtn'),old=btn.textContent;btn.disabled=true;btn.textContent='🎬 Baking clip…';
+  track('compare_started',{preset:state.activePreset||'custom'});
+  try{const ext=await exportCompare();track('compare_completed',{ext:ext,preset:state.activePreset||'custom'});
+    btn.textContent='🎉 Post it!';confettiBoom(30);}
+  catch(e){track('compare_failed',{msg:String((e&&e.message)||e).slice(0,120)});btn.textContent='😵 '+String((e&&e.message)||'failed').slice(0,24);}
+  finally{setTimeout(()=>{btn.textContent=old;btn.disabled=false;},2400);}
+};
 function exportRecord(){
   return new Promise((resolve,reject)=>{
     const at=streamDest.stream.getAudioTracks()[0]; if(!at)return reject(new Error('no audio'));
