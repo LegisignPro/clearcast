@@ -157,6 +157,20 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   .pnote{text-align:center;color:#7f9dad;font-size:.72rem;margin-top:10px}
   .pdone{text-align:center;font-weight:900;color:#26b98d;font-size:1.05rem;padding:22px 0}
 
+  /* ── Pro unlock celebration ── */
+  #cmask .pcard{text-align:center}
+  .cemoji{font-size:3.4rem;line-height:1.1;animation:cpop .55s cubic-bezier(.2,1.7,.4,1)}
+  .ctitle{font-size:2.1rem;font-weight:900;margin:8px 0 4px;letter-spacing:.5px;
+    background:linear-gradient(90deg,#e84f78,#f0a53d,#37a9e1,#e84f78);background-size:300% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;animation:cpop .6s cubic-bezier(.2,1.7,.4,1),cshimmer 2.6s linear infinite}
+  @keyframes cpop{0%{transform:scale(.2) rotate(-6deg);opacity:0}70%{transform:scale(1.12) rotate(2deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+  @keyframes cshimmer{to{background-position:300% 0}}
+  .csub{color:#7f9dad;font-weight:700;margin:0 0 14px}
+  .cfeat{list-style:none;padding:0;margin:0 0 18px;font-weight:800;color:#294451;font-size:.95rem}
+  .cfeat li{padding:6px 0}
+  .confetti{position:fixed;top:-24px;width:10px;height:15px;border-radius:3px;z-index:300;pointer-events:none;animation:cfall linear forwards}
+  @keyframes cfall{0%{transform:translateY(0) rotate(0) }100%{transform:translateY(112vh) rotate(760deg)}}
+
   /* ── splash / help ── */
   .helpb{border:0;border-radius:50%;width:30px;height:30px;font:inherit;font-weight:900;font-size:.85rem;cursor:pointer;color:#fff;flex:0 0 auto;
     background:linear-gradient(160deg,#8fd3f4,#37a9e1);box-shadow:0 3px 8px -2px rgba(55,169,225,.6),inset 0 2px 3px rgba(255,255,255,.5)}
@@ -255,7 +269,22 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
       <p class="pnote" id="pnote">No charge today — you get first access when Pro lands.</p>
     </div>
     <div id="pdone" class="pdone hidden">🎉 You're on the list!</div>
+    <button id="pshare" class="pskip" style="color:#e84f78;font-weight:800">🍬 Share with a friend → +1 free save</button>
     <button id="pskip" class="pskip">maybe later</button>
+  </div>
+</div>
+
+<div id="cmask" class="pmask hidden">
+  <div class="pcard">
+    <div class="cemoji">🍭🎉🍬</div>
+    <h2 class="ctitle">PRO UNLOCKED!</h2>
+    <p class="csub">You just funded an independent audio lab. Absolute legend.</p>
+    <ul class="cfeat">
+      <li>♾️ Unlimited saves — the cap is GONE</li>
+      <li>🔓 Every candy + every Studio knob, forever</li>
+      <li>⚡ Your early-bird price is locked for life</li>
+    </ul>
+    <button id="cgo" class="pcta">Let's make something loud 🔊</button>
   </div>
 </div>
 
@@ -290,7 +319,7 @@ function exportsUsed(){try{return parseInt(localStorage.getItem('cc_exports')||'
 function bumpExports(){try{localStorage.setItem('cc_exports',String(exportsUsed()+1));}catch(e){}}
 function exportAllowed(){
   if(isPro())return{ok:true};
-  if(exportsUsed()>=FREE_EXPORT_LIMIT)return{ok:false,why:'limit_reached'};
+  if(exportsUsed()>=saveLimit())return{ok:false,why:'limit_reached'};
   return{ok:true,free:true};
 }
 
@@ -311,6 +340,8 @@ function openPro(source){
     $('pcta').textContent='Get early access';
     $('pnote').textContent='No charge today — you get first access when Pro lands.';
   }
+  $('pshare').style.display=(!isPro()&&bonusSaves()<BONUS_MAX)?'':'none';
+  $('pshare').textContent='🍬 Share with a friend → +1 free save ('+bonusSaves()+'/'+BONUS_MAX+' earned)';
   $('pmask').classList.remove('hidden');
   proShownThisSession=true;
   track('pro_shown',{source:source,price:PRICE,live_checkout:proLive()});
@@ -336,14 +367,51 @@ $('pcta').onclick=()=>{
   }
 };
 
+// ── confetti engine (celebration + share rewards) ──
+function confettiBoom(n){
+  const cols=['#ff6f91','#ffd23f','#5cc6f2','#7bd67b','#9b7bff','#e84f78','#f0a53d'];
+  for(let i=0;i<n;i++){
+    const c=document.createElement('span');c.className='confetti';
+    c.style.left=Math.random()*100+'vw';
+    c.style.animationDuration=(2.2+Math.random()*2.6)+'s';
+    c.style.animationDelay=(Math.random()*1.1)+'s';
+    if(i%6===0){c.textContent=['🍬','🍭','✨','🎉','⭐'][i%5];c.style.background='none';c.style.fontSize='22px';c.style.width='auto';c.style.height='auto';}
+    else{c.style.background=cols[i%cols.length];}
+    document.body.appendChild(c);setTimeout(()=>c.remove(),5500);
+  }
+}
+
+// ── share loop: sharing earns bonus saves (up to BONUS_MAX) ──
+const SHARE_URL='https://legisignpro.github.io/clearcast/?src=friend';
+const BONUS_MAX=3;
+function bonusSaves(){try{return Math.min(BONUS_MAX,parseInt(localStorage.getItem('cc_bonus')||'0',10)||0);}catch(e){return 0;}}
+function saveLimit(){return FREE_EXPORT_LIMIT+bonusSaves();}
+async function shareApp(source){
+  let ok=false;
+  try{
+    if(navigator.share){await navigator.share({title:'ClearCast — free 1-tap audio repair',text:'Fixes muddy/echoey phone audio in one tap, right in your browser. Nothing uploads.',url:SHARE_URL});ok=true;}
+    else{await navigator.clipboard.writeText(SHARE_URL);ok=true;$('status').textContent='🔗 Link copied — send it to a friend!';}
+  }catch(e){/* share sheet dismissed */}
+  if(!ok)return;
+  let granted=false;
+  if(!isPro()&&bonusSaves()<BONUS_MAX){try{localStorage.setItem('cc_bonus',String(bonusSaves()+1));granted=true;}catch(e){}}
+  track('share_clicked',{source:source,bonus_granted:granted,bonus_total:bonusSaves()});
+  if(granted){$('status').textContent='🍬 +1 bonus save unlocked ('+bonusSaves()+'/'+BONUS_MAX+') — thanks for spreading the word!';confettiBoom(35);}
+}
+$('pshare').onclick=()=>{closePro();shareApp('pro_modal');};
+
 // Returning from Stripe: set the Payment Link's after-payment redirect to
 // https://legisignpro.github.io/clearcast/?checkout=success so this fires.
 if(location.search.indexOf('checkout=success')>=0){
   track('purchase_completed',{price:PRICE});
   try{localStorage.setItem('cc_pro','1');}catch(e){}
   try{history.replaceState(null,'',location.pathname);}catch(e){}
-  $('status').textContent='🎉 Welcome to ClearCast Pro — everything is unlocked on this device!';
+  $('cmask').classList.remove('hidden');
+  confettiBoom(90);setTimeout(()=>confettiBoom(70),900);setTimeout(()=>confettiBoom(70),1900);
+  try{localStorage.setItem('cc_seen_splash','1');}catch(e){}
 }
+
+$('cgo').onclick=()=>{$('cmask').classList.add('hidden');confettiBoom(40);};
 
 // ── splash (first visit) + help button ──
 document.querySelectorAll('.fblink').forEach(a=>a.addEventListener('click',()=>track('feedback_clicked')));
@@ -692,7 +760,7 @@ $('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a cli
   if(!gate.ok){
     track('export_blocked',{why:gate.why,preset:state.activePreset||'custom',exports_used:exportsUsed(),price:PRICE});
     openPro('export_gate');
-    $('status').textContent='You used your 5 free saves — go Pro for unlimited.';
+    $('status').textContent='You used your '+saveLimit()+' free saves — go Pro for unlimited.';
     return;
   }
   if(!state.started)buildGraph(); if(ctx&&ctx.state==='suspended')await ctx.resume();
@@ -701,9 +769,9 @@ $('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a cli
   const prog=setInterval(()=>{if(video.duration){const pct=Math.min(100,Math.round(video.currentTime/video.duration*100));$('recpct').textContent=pct+'%';$('recfill').style.width=pct+'%';}},150);
   try{const ext=await exportRecord();
     let msg='Saved ClearCast.'+ext.toUpperCase();
-    if(gate.free){bumpExports();const left=Math.max(0,FREE_EXPORT_LIMIT-exportsUsed());msg+=' · '+left+' free save'+(left===1?'':'s')+' left';}
+    if(gate.free){bumpExports();const left=Math.max(0,saveLimit()-exportsUsed());msg+=' · '+left+' free save'+(left===1?'':'s')+' left';}
     $('status').textContent=msg;
-    track('export_completed',{ext:ext,duration_s:Math.round(video.duration||0),preset:state.activePreset||'custom',free_exports_left:gate.free?Math.max(0,FREE_EXPORT_LIMIT-exportsUsed()):null});
+    track('export_completed',{ext:ext,duration_s:Math.round(video.duration||0),preset:state.activePreset||'custom',free_exports_left:gate.free?Math.max(0,saveLimit()-exportsUsed()):null});
     if(!proShownThisSession&&!isPro())setTimeout(()=>openPro('post_export'),900);}
   catch(e){console.warn(e);$('status').textContent='Export failed: '+((e&&e.message)||e);
     track('export_failed',{msg:String((e&&e.message)||e).slice(0,120)});}
