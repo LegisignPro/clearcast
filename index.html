@@ -122,6 +122,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   .scrub{position:fixed;left:0;right:0;bottom:calc(74px + var(--safe-b));z-index:29;max-width:480px;margin:0 auto;padding:8px 18px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-top:1px solid var(--line)}
   .scrub input{width:100%;height:6px}
   #status{position:fixed;left:0;right:0;bottom:calc(120px + var(--safe-b));text-align:center;font-size:.72rem;color:var(--muted);pointer-events:none;padding:4px}
+  #status:empty{display:none}
   .hidden{display:none!important}
 
   /* recording overlay + candy brickbreaker */
@@ -165,7 +166,8 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     background:linear-gradient(160deg,#f7a1bf,#e84f78);box-shadow:0 3px 8px -2px rgba(232,79,120,.55)}
   .steps b{color:#e84f78}
   .privline{text-align:center;font-size:.78rem;font-weight:700;color:#26b98d;margin:0 0 14px}
-  .chip .lockmark{position:absolute;top:6px;right:8px;font-size:.7rem;opacity:.9}
+  .betaline{text-align:center;font-size:.74rem;font-weight:600;color:#7f9dad;margin:0 0 14px;line-height:1.5}
+  .betaline a{color:#e84f78;font-weight:800;text-decoration:none}
   #about{margin:26px 0 8px;padding:18px;background:rgba(255,255,255,.6);border:1.5px solid var(--line);border-radius:var(--radius)}
   #about h2{font-size:1rem;font-weight:800;color:var(--accent);margin:0 0 8px}
   #about h3{font-size:.85rem;font-weight:800;color:#294451;margin:14px 0 6px}
@@ -211,6 +213,9 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
         <li><b>Save</b> — bakes the repaired audio into your video, ready to post.</li>
       </ol>
       <p>100% private: everything runs in your browser. Your clip never uploads, never touches a server, and works even offline once loaded.</p>
+      <h3>Where ClearCast is at (honestly)</h3>
+      <p>ClearCast is in open beta, built and shipped by one independent developer — a bassist who got tired of great takes ruined by phone audio. The repair engine you're using works today; batch cleaning, saved presets, and more are on the roadmap and get built in the order testers ask for them. Your first 5 saves are free with every preset and every Studio setting while we tune the experience.</p>
+      <p>Found a bug, hated something, want a feature? <a href="mailto:contact.legisign@gmail.com?subject=ClearCast%20feedback" class="fblink" style="color:#e84f78;font-weight:800">Email us directly</a> — every message gets read by the person who builds this, and beta feedback genuinely decides what ships next.</p>
     </section>
   </div>
 </div>
@@ -224,7 +229,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   <button id="ab"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-2px"><circle cx="12" cy="12" r="8" fill="#fff"/><path d="M12 4a8 8 0 010 16z" fill="rgba(0,0,0,.14)"/></svg> <span id="abtxt">A/B</span></button>
   <button id="save" disabled><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-2px"><circle cx="10" cy="8.5" r="6.5" fill="#fff"/><rect x="9" y="13" width="2" height="9" rx="1" fill="#fff"/></svg> Save</button>
 </div>
-<div id="status">Load a clip to begin.</div>
+<div id="status"></div>
 
 <div id="smask" class="pmask hidden">
   <div class="pcard">
@@ -237,6 +242,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
       <li><b>Save</b> — bakes the new audio in, ready to post. 🎮</li>
     </ol>
     <p class="privline">🔒 Nothing uploads — your clip never leaves your device.</p>
+    <p class="betaline">🧪 ClearCast is in open beta — you're one of the first testers, and your first 5 saves are on the house. Something sound off? Missing a feature? <a href="mailto:contact.legisign@gmail.com?subject=ClearCast%20feedback" class="fblink">Tell us</a> — it decides what gets built next.</p>
     <button id="sgo" class="pcta">Let's go 🍬</button>
   </div>
 </div>
@@ -246,10 +252,10 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     <h2>🍭 ClearCast Pro</h2>
     <p class="psub" id="psub">Every preset. Every knob. Unlimited saves.</p>
     <ul class="pfeat">
-      <li>🔓&nbsp;<span>Export with every preset + your own Studio settings</span></li>
-      <li>♾️&nbsp;<span>Unlimited saves — no caps, ever</span></li>
+      <li>♾️&nbsp;<span>Unlimited saves — the 5-save beta cap disappears</span></li>
+      <li>🔓&nbsp;<span>Every preset + your own Studio settings, forever</span></li>
       <li>📦&nbsp;<span>Coming next, free for members: batch cleaning + saved presets</span></li>
-      <li>⚡&nbsp;<span>Early-bird price locked in for life</span></li>
+      <li>⚡&nbsp;<span>Early-bird price locked in for life — you're funding an indie build</span></li>
     </ul>
     <p class="pprice">Early-bird price: <b>$<span id="pprice">6</span>/mo</b> — locked in for life</p>
     <div id="pform">
@@ -285,17 +291,14 @@ try{PRICE=localStorage.getItem('cc_price')||(Math.random()<0.5?'6':'9');localSto
 try{if(window.posthog&&posthog.register)posthog.register({price_variant:PRICE});}catch(e){}
 
 // ── free tier rules ──
-// Phone Rescue + Podcast Voice export free, up to FREE_EXPORT_LIMIT total saves.
-// Everything is fully previewable/tweakable live; only Save is gated.
-const FREE_PRESETS=['phone','podcast'];
+// Beta: EVERY preset and custom Studio chain exports free, up to
+// FREE_EXPORT_LIMIT total saves. Preview is always unlimited.
 const FREE_EXPORT_LIMIT=5;
 function isPro(){try{return localStorage.getItem('cc_pro')==='1';}catch(e){return false;}}
 function exportsUsed(){try{return parseInt(localStorage.getItem('cc_exports')||'0',10)||0;}catch(e){return 0;}}
 function bumpExports(){try{localStorage.setItem('cc_exports',String(exportsUsed()+1));}catch(e){}}
 function exportAllowed(){
   if(isPro())return{ok:true};
-  const preset=state.activePreset;
-  if(!FREE_PRESETS.includes(preset))return{ok:false,why:preset?'preset_locked':'custom_locked'};
   if(exportsUsed()>=FREE_EXPORT_LIMIT)return{ok:false,why:'limit_reached'};
   return{ok:true,free:true};
 }
@@ -342,6 +345,7 @@ if(location.search.indexOf('checkout=success')>=0){
 }
 
 // ── splash (first visit) + help button ──
+document.querySelectorAll('.fblink').forEach(a=>a.addEventListener('click',()=>track('feedback_clicked')));
 function openSplash(src){$('smask').classList.remove('hidden');track('splash_shown',{source:src});}
 $('sgo').onclick=()=>{$('smask').classList.add('hidden');try{localStorage.setItem('cc_seen_splash','1');}catch(e){}track('splash_dismissed');};
 $('helpBtn').onclick=()=>openSplash('help');
@@ -484,7 +488,6 @@ function renderChips(){
 const chips=$('chips');
 PRESETS.forEach(p=>{const b=document.createElement('button');b.className='chip';b.dataset.id=p.id;b.textContent=p.label;
   if(p.color){b.style.setProperty('--c1',p.color[0]);b.style.setProperty('--c2',p.color[1]);}
-  if(!FREE_PRESETS.includes(p.id)&&p.id!=='flat'&&!isPro()){const m=document.createElement('span');m.className='lockmark';m.textContent='✨';m.title='Preview free · export with Pro';b.appendChild(m);}
   b.onclick=()=>applyPreset(p.id);chips.appendChild(b);});
 
 // ---- Studio ----
@@ -677,9 +680,7 @@ $('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a cli
   if(!gate.ok){
     track('export_blocked',{why:gate.why,preset:state.activePreset||'custom',exports_used:exportsUsed(),price:PRICE});
     openPro('export_gate');
-    $('status').textContent = gate.why==='limit_reached'
-      ? 'Free saves used up — go Pro for unlimited.'
-      : 'This preset previews free — go Pro to save with it.';
+    $('status').textContent='You used your 5 free saves — go Pro for unlimited.';
     return;
   }
   if(!state.started)buildGraph(); if(ctx&&ctx.state==='suspended')await ctx.resume();
