@@ -498,8 +498,11 @@ const PRESETS=[
      fix:[{freq:300,q:1.4,gain:-3},{freq:800,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:6,attack:5,release:150,knee:6,makeup:7},
      deess:{amount:40,freq:6500},tone:{warmth:2,presence:2},dist:{amount:15,ratio:4,mode:'dist2'},airAmt:25,target:'podcast'})},
   {id:'interview',label:'Interview',      color:['#33bcd6','#159cbb'], params:mk({declip:true,denoise:.6,dereverb:.35,gate:.4,hpf:95,lpf:14000,
-     fix:[{freq:350,q:1.4,gain:-3},{freq:1000,q:1.2,gain:-1},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:5,attack:6,release:150,knee:6,makeup:6},
-     deess:{amount:35,freq:6500},tone:{warmth:1,presence:2},target:'podcast'})},
+     /* identity lives in ACTIVE stages: drier + tighter than Podcast Voice — deeper room-mud and
+        boxiness cuts + more presence, no saturation/air color. (Restoration params are placeholders
+        until the native engine lands.) */
+     fix:[{freq:350,q:1.4,gain:-4},{freq:1000,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:5,attack:6,release:150,knee:6,makeup:6},
+     deess:{amount:40,freq:6500},tone:{warmth:1,presence:3},target:'podcast'})},
   {id:'harsh',  label:'Tame Harsh',       color:['#f4b53f','#e08a1e'], params:mk({hpf:80,lpf:13500,
      fix:[{freq:250,q:1.2,gain:-1},{freq:700,q:1.2,gain:-1},{freq:3800,q:3,gain:-5}],comp:{threshold:-22,ratio:3,attack:15,release:200,knee:8,makeup:4},
      deess:{amount:60,freq:6000},tone:{warmth:2,presence:-2},target:'youtube'})},
@@ -629,7 +632,12 @@ function buildProIfNeeded(){ if(proBuilt)return;proBuilt=true;const pro=$('pro')
   proSyncers.push(()=>dc.classList.toggle('on',P().declip));c.appendChild(dc);
   add(c,proSlider('De-Noise',()=>P().denoise*100,v=>P().denoise=v/100,0,100,1,v=>Math.round(v)+'%'));
   add(c,proSlider('De-Reverb',()=>P().dereverb*100,v=>P().dereverb=v/100,0,100,1,v=>Math.round(v)+'%'));
-  add(c,proSlider('Noise Gate',()=>P().gate*100,v=>P().gate=v/100,0,100,1,v=>Math.round(v)+'%'));pro.appendChild(c);
+  add(c,proSlider('Noise Gate',()=>P().gate*100,v=>P().gate=v/100,0,100,1,v=>Math.round(v)+'%'));
+  // Restoration DSP isn't wired into the live chain yet (native engine in testing) —
+  // controls stay visible as a roadmap but locked, so nothing pretends to work.
+  c.querySelectorAll('input,button').forEach(el=>{el.disabled=true;el.style.pointerEvents='none';});
+  c.style.opacity='.55';
+  pro.appendChild(c);
   c=card('Filters','Trim the extremes.',null,'filters');
   add(c,proSlider('High-Pass',()=>P().hpf,v=>P().hpf=v,20,400,1,v=>Math.round(v)+' Hz'));
   add(c,proSlider('Low-Pass',()=>P().lpf,v=>P().lpf=v,2000,20000,100,v=>Math.round(v)+' Hz'));pro.appendChild(c);
