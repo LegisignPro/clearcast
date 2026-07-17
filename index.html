@@ -250,7 +250,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     <section id="about">
       <h2>What is CrispPop?</h2>
       <p>Free, one-tap audio repair for phone-shot video — fixes muddy, echoey, harsh, or quiet sound and bakes it straight back into your clip, still in sync. 🔒 100% private: everything runs in your browser; your video never uploads.</p>
-      <p>Under the candy, each preset drives a real 10-stage studio chain — corrective EQ, compression, split-band de-essing, saturation, platform-matched loudness. Flip to Studio mode to drive every stage yourself. (A native de-noise/de-reverb engine is in testing and lands in an upcoming update.)</p>
+      <p>Under the candy, each preset drives a real 14-stage studio chain — de-clip, de-noise, de-reverb, and gate up front, then corrective EQ, compression, split-band de-essing, saturation, and platform-matched loudness. Flip to Studio mode to drive every stage yourself. (Restoration runs on our in-browser engine v1 — a deeper native engine is in the works.)</p>
       <p>CrispPop is an indie project in open beta, tuned by a working musician — your first 5 saves are free on everything (free saves carry a tiny CrispPop badge; Pro takes it off). Found a bug or want a feature? <a href="https://forms.gle/uMghNNNsrMZxjstA8" target="_blank" rel="noopener" class="fblink" style="color:#e84f78;font-weight:800">Tell us in 60 seconds</a> — every response is read by the person who builds this, and it decides what ships next.</p>
     </section>
   </div>
@@ -498,9 +498,8 @@ const PRESETS=[
      fix:[{freq:300,q:1.4,gain:-3},{freq:800,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:6,attack:5,release:150,knee:6,makeup:7},
      deess:{amount:40,freq:6500},tone:{warmth:2,presence:2},dist:{amount:15,ratio:4,mode:'dist2'},airAmt:25,target:'podcast'})},
   {id:'interview',label:'Interview',      color:['#33bcd6','#159cbb'], params:mk({declip:true,denoise:.6,dereverb:.35,gate:.4,hpf:95,lpf:14000,
-     /* identity lives in ACTIVE stages: drier + tighter than Podcast Voice — deeper room-mud and
-        boxiness cuts + more presence, no saturation/air color. (Restoration params are placeholders
-        until the native engine lands.) */
+     /* drier + tighter than Podcast Voice: deeper room-mud and boxiness cuts + more presence,
+        no saturation/air color — plus heavier denoise/gate via the restoration engine. */
      fix:[{freq:350,q:1.4,gain:-4},{freq:1000,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:5,attack:6,release:150,knee:6,makeup:6},
      deess:{amount:40,freq:6500},tone:{warmth:1,presence:3},target:'podcast'})},
   {id:'harsh',  label:'Tame Harsh',       color:['#f4b53f','#e08a1e'], params:mk({hpf:80,lpf:13500,
@@ -516,6 +515,7 @@ const PRESET_BY_ID=Object.fromEntries(PRESETS.map(p=>[p.id,p]));
 const state={params:defaultParams(),activePreset:'flat',baseline:defaultParams(),face:'simple',bypass:false,loop:true,started:false,file:null,bypassSections:{}};
 
 function eff(){ const p=clone(state.params),b=state.bypassSections;
+  if(b.rest){p.declip=false;p.denoise=0;p.dereverb=0;p.gate=0;}
   if(b.filters){p.hpf=20;p.lpf=20000;}
   if(b.fix){p.fix.forEach(x=>x.gain=0);}
   if(b.peq){p.peq.forEach(x=>x.on=false);}
@@ -534,6 +534,113 @@ function makeCurve(drive,mode){ if(drive<=0)return null;
 
 let ctx,src,nodes={},analyser,streamDest,restoreParams={declip:false,denoise:0,dereverb:0,gate:0}; const video=$('video');
 function biq(type,f,q,g){const n=ctx.createBiquadFilter();n.type=type;n.frequency.value=f;if(q!=null)n.Q.value=q;if(g!=null)n.gain.value=g;return n;}
+
+// ── Restoration engine v1: in-browser STFT worklet (de-clip / de-noise / de-reverb / gate) ──
+// Real DSP, zero dependencies. A deeper native (WASM) engine can replace this later.
+const RESTORE_SRC=`class CCR extends AudioWorkletProcessor{
+constructor(){super();
+ this.p={declip:0,denoise:0,dereverb:0,gate:0};
+ this.port.onmessage=e=>{if(e.data&&e.data.ping){this.port.postMessage(this.p);return;}if(e.data)this.p=e.data;};
+ const N=this.N=512;this.H=256;this.B=257;
+ this.win=new Float32Array(N);
+ for(let i=0;i<N;i++)this.win[i]=Math.sqrt(0.5-0.5*Math.cos(2*Math.PI*i/N));
+ this.rev=new Uint16Array(N);
+ for(let i=0;i<N;i++){let r=0,x=i;for(let b=0;b<9;b++){r=(r<<1)|(x&1);x>>=1;}this.rev[i]=r;}
+ this.cs=new Float32Array(N/2);this.sn=new Float32Array(N/2);
+ for(let i=0;i<N/2;i++){this.cs[i]=Math.cos(-2*Math.PI*i/N);this.sn[i]=Math.sin(-2*Math.PI*i/N);}
+ this.ch=[];
+}
+mk(){const N=this.N;return{inR:new Float32Array(8192),outR:new Float32Array(8192),w:0,frame:0,rd:0,
+ re:new Float32Array(N),im:new Float32Array(N),
+ noise:new Float32Array(this.B).fill(1),init:0,peak:new Float32Array(this.B),g1:new Float32Array(this.B).fill(1),
+ env:0,gg:1,pend:new Float32Array(128),pendv:false,h:[0,0,0,0],pk:0.5};}
+fft(re,im){const N=this.N,rev=this.rev,cs=this.cs,sn=this.sn;
+ for(let i=0;i<N;i++){const j=rev[i];if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+ for(let len=2;len<=N;len<<=1){const half=len>>1,step=N/len;
+  for(let i=0;i<N;i+=len)for(let j=0;j<half;j++){const k=j*step,cq=cs[k],sq=sn[k];
+   const xr=re[i+j+half]*cq-im[i+j+half]*sq,xi=re[i+j+half]*sq+im[i+j+half]*cq;
+   re[i+j+half]=re[i+j]-xr;im[i+j+half]=im[i+j]-xi;re[i+j]+=xr;im[i+j]+=xi;}}}
+ifft(re,im){const N=this.N;for(let i=0;i<N;i++)im[i]=-im[i];this.fft(re,im);
+ const s=1/N;for(let i=0;i<N;i++){re[i]*=s;im[i]=-im[i]*s;}}
+declip(st,cur){
+ if(!st.pendv){st.pend.set(cur);st.pendv=true;st.pk=0.5;return null;}
+ const seg=new Float32Array(260);
+ seg[0]=st.h[0];seg[1]=st.h[1];seg[2]=st.h[2];seg[3]=st.h[3];
+ seg.set(st.pend,4);seg.set(cur,132);
+ for(let q=4;q<260;q++){const a=Math.abs(seg[q]);if(a>st.pk)st.pk=a;else st.pk*=0.99997;}
+ if(st.pk<0.35){st.h[0]=seg[128];st.h[1]=seg[129];st.h[2]=seg[130];st.h[3]=seg[131];const o=seg.slice(4,132);st.pend.set(cur);return o;}
+ const T=st.pk*0.96;let i=4;
+ while(i<132){
+  if(Math.abs(seg[i])>=T){let j=i;while(j<259&&Math.abs(seg[j])>=T)j++;
+   const L=j-i;
+   if(Math.abs(seg[j])<T&&L>=2&&L<=32){const a=seg[i-1],b=seg[j],da=(a-seg[i-2]),db=(j+1<260?seg[j+1]-b:0);
+    for(let k=0;k<L;k++){const t=(k+1)/(L+1),t2=t*t,t3=t2*t;
+     seg[i+k]=(2*t3-3*t2+1)*a+(t3-2*t2+t)*da*L+(-2*t3+3*t2)*b+(t3-t2)*db*L;
+     if(seg[i+k]>1.5)seg[i+k]=1.5;if(seg[i+k]<-1.5)seg[i+k]=-1.5;}}
+   i=j+1;}
+  else i++;}
+ const out=seg.slice(4,132);
+ st.h[0]=seg[128];st.h[1]=seg[129];st.h[2]=seg[130];st.h[3]=seg[131];
+ st.pend.set(cur);
+ return out;}
+frameStep(st){const N=this.N,H=this.H,B=this.B,p=this.p,M=8191,re=st.re,im=st.im;
+ let fe=0;
+ for(let i=0;i<N;i++){const v=st.inR[(st.frame+i)&M]*this.win[i];re[i]=v;im[i]=0;fe+=v*v;}
+ this.fft(re,im);
+ const dn=p.denoise,dr=p.dereverb;
+ // silent frames (paused media, dead air) must NOT train the noise estimator —
+ // otherwise the floor collapses to zero and denoise stops biting for ~20s.
+ const active_frame=Math.sqrt(fe/N)>1e-4;
+ if(dn>0.01||dr>0.01){
+  const beta=1+2.5*dn,floorG=Math.pow(10,(-22*dn)/20),drFloor=Math.pow(10,(-18*dr)/20);
+  for(let k=0;k<B;k++){
+   const mr=re[k],mi=im[k],mag=Math.sqrt(mr*mr+mi*mi)+1e-12;
+   if(active_frame){
+    if(st.init<40)st.noise[k]=Math.min(st.noise[k],mag);
+    if(mag<st.noise[k])st.noise[k]=st.noise[k]*0.8+mag*0.2;
+    else st.noise[k]*=(mag>8*st.noise[k]?1.02:1.006);
+    if(st.noise[k]<1e-7)st.noise[k]=1e-7;
+   }
+   let g=1;
+   if(dn>0.01)g=Math.max(floorG,Math.min(1,(mag-beta*st.noise[k])/mag));
+   if(dr>0.01){if(mag>st.peak[k])st.peak[k]=mag;else st.peak[k]*=0.982;
+    const thr=st.peak[k]*0.7;
+    if(mag<thr){const r=mag/(thr+1e-12);g*=Math.max(drFloor,Math.pow(r,0.6+3*dr));}}
+   g=st.g1[k]*0.6+g*0.4;st.g1[k]=g;
+   re[k]=mr*g;im[k]=mi*g;
+   if(k>0&&k<N/2){re[N-k]=re[k];im[N-k]=-im[k];}}}
+ if(active_frame)st.init++;
+ this.ifft(re,im);
+ for(let i=0;i<N;i++)st.outR[(st.frame+i)&M]+=re[i]*this.win[i];
+ st.frame+=H;}
+gate(st,y,n){const amt=this.p.gate;if(amt<0.01){st.gg=1;st.env=0;return;}
+ const thr=Math.pow(10,(-72+50*amt)/20),minG=0.0316;
+ for(let i=0;i<n;i++){const a=Math.abs(y[i]);
+  st.env=a>st.env?st.env+(a-st.env)*0.25:st.env*0.9994;
+  let tg=1;if(st.env<thr){const r=st.env/thr;tg=Math.max(minG,r*r);}
+  st.gg=tg<st.gg?st.gg+(tg-st.gg)*0.02:st.gg+(tg-st.gg)*0.12;
+  y[i]*=st.gg;}}
+process(inputs,outputs){const inp=inputs[0],out=outputs[0];
+ if(!inp||!inp.length)return true;
+ const p=this.p,bypass=p.declip<0.5&&p.denoise<=0.01&&p.dereverb<=0.01&&p.gate<=0.01;
+ for(let cix=0;cix<out.length;cix++){
+  const st=this.ch[cix]||(this.ch[cix]=this.mk());
+  const x=inp[Math.min(cix,inp.length-1)],y=out[cix],n=x.length;
+  if(bypass){y.set(x);
+   if(st.w){st.w=0;st.frame=0;st.rd=0;st.init=0;st.pendv=false;st.gg=1;st.env=0;st.outR.fill(0);st.g1.fill(1);st.noise.fill(1);st.peak.fill(0);}
+   continue;}
+  let blk=x;
+  if(p.declip>=0.5){const f=this.declip(st,x);if(!f){y.fill(0);continue;}blk=f;}
+  const M=8191;
+  for(let i=0;i<n;i++)st.inR[(st.w+i)&M]=blk[i];
+  st.w+=n;
+  while(st.w-st.frame>=this.N)this.frameStep(st);
+  if(st.rd+n<=st.frame){for(let i=0;i<n;i++){const ix=(st.rd+i)&M;y[i]=st.outR[ix];st.outR[ix]=0;}st.rd+=n;}
+  else y.fill(0);
+  this.gate(st,y,n);}
+ return true;}}
+registerProcessor('cc-restore',CCR);`;
+
 function buildGraph(){
   const Ctx=window.AudioContext||window.webkitAudioContext; ctx=new Ctx();
   src=ctx.createMediaElementSource(video); const n=nodes;
@@ -564,6 +671,17 @@ function buildGraph(){
   n.merger.connect(n.master);n.master.connect(n.limiter);n.limiter.connect(n.wet);n.wet.connect(n.mix);
   src.connect(n.dry);n.dry.connect(n.mix);n.mix.connect(analyser);analyser.connect(ctx.destination);analyser.connect(streamDest);
   state.started=true;updateAudio();
+  // Restoration engine v1: loads async; splices in front of the chain when ready.
+  if(window.AudioWorklet&&ctx.audioWorklet){
+    const wurl=URL.createObjectURL(new Blob([RESTORE_SRC],{type:'application/javascript'}));
+    ctx.audioWorklet.addModule(wurl).then(()=>{
+      n.rest=new AudioWorkletNode(ctx,'cc-restore',{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2]});
+      // deterministic rewire: src feeds ONLY rest + dry after this
+      src.disconnect();
+      src.connect(n.rest);n.rest.connect(n.hpf1);src.connect(n.dry);
+      window.__restReady=true;updateAudio();
+    }).catch(e=>{console.warn('restoration engine unavailable',e);});
+  }
 }
 function updateAudio(){ if(!state.started)return;
   const p=eff(),t=ctx.currentTime,n=nodes,st=(node,v)=>node.setTargetAtTime(v,t,0.01);
@@ -579,6 +697,7 @@ function updateAudio(){ if(!state.started)return;
   n.sat.curve=makeCurve(p.sat.drive,p.sat.mode);
   st(n.airShelf.gain,(p.airAmt/100)*8);st(n.sideG.gain,0.5*p.width);st(n.midG.gain,0.5);
   const tp=T[p.target]||T.none;st(n.master.gain,dbToLin(p.masterGain+tp.gain));st(n.limiter.threshold,tp.ceil);
+  if(n.rest)n.rest.port.postMessage({declip:p.declip?1:0,denoise:p.denoise||0,dereverb:p.dereverb||0,gate:p.gate||0});
   st(n.dry.gain,state.bypass?1:0);st(n.wet.gain,state.bypass?0:1);
 }
 
@@ -626,18 +745,13 @@ function card(title,sub,badge,key){const c=document.createElement('div');c.class
   return c;}
 function add(c,el){if(el._sync)proSyncers.push(el._sync);c.appendChild(el);}
 function buildProIfNeeded(){ if(proBuilt)return;proBuilt=true;const pro=$('pro');const P=()=>state.params;
-  let c=card('Restoration','Repair before you shape — native engine in testing, these controls go live with it.','soon','rest');
+  let c=card('Restoration','Repair before you shape — in-browser engine v1, live. A deeper native engine is in the works.','v1','rest');
   const dc=document.createElement('button');dc.className='byp';dc.textContent='De-Clip';dc.style.marginBottom='10px';
   dc.onclick=()=>{P().declip=!P().declip;dc.classList.toggle('on',P().declip);state.activePreset=null;updateAudio();renderChips();};
   proSyncers.push(()=>dc.classList.toggle('on',P().declip));c.appendChild(dc);
   add(c,proSlider('De-Noise',()=>P().denoise*100,v=>P().denoise=v/100,0,100,1,v=>Math.round(v)+'%'));
   add(c,proSlider('De-Reverb',()=>P().dereverb*100,v=>P().dereverb=v/100,0,100,1,v=>Math.round(v)+'%'));
-  add(c,proSlider('Noise Gate',()=>P().gate*100,v=>P().gate=v/100,0,100,1,v=>Math.round(v)+'%'));
-  // Restoration DSP isn't wired into the live chain yet (native engine in testing) —
-  // controls stay visible as a roadmap but locked, so nothing pretends to work.
-  c.querySelectorAll('input,button').forEach(el=>{el.disabled=true;el.style.pointerEvents='none';});
-  c.style.opacity='.55';
-  pro.appendChild(c);
+  add(c,proSlider('Noise Gate',()=>P().gate*100,v=>P().gate=v/100,0,100,1,v=>Math.round(v)+'%'));pro.appendChild(c);
   c=card('Filters','Trim the extremes.',null,'filters');
   add(c,proSlider('High-Pass',()=>P().hpf,v=>P().hpf=v,20,400,1,v=>Math.round(v)+' Hz'));
   add(c,proSlider('Low-Pass',()=>P().lpf,v=>P().lpf=v,2000,20000,100,v=>Math.round(v)+' Hz'));pro.appendChild(c);
