@@ -4,13 +4,27 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no" />
 <meta name="theme-color" content="#dff1fb" />
+<script>
+/* Old home → new home. Preserves path + query (incl. ?checkout=success). */
+if(location.hostname==='legisignpro.github.io'){
+  location.replace('https://crisppop.pages.dev'+location.pathname.replace(/^\/clearcast/,'')+location.search+location.hash);
+}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CrispPop",
+"applicationCategory":"MultimediaApplication","operatingSystem":"Web browser",
+"url":"https://crisppop.pages.dev/",
+"description":"Free one-tap audio repair for phone video. Fixes muddy, echoey, harsh, or quiet audio right in your browser and bakes it back into your clip in sync. Nothing uploads.",
+"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
 <title>CrispPop — Free One-Tap Audio Repair for Creators</title>
 <meta name="description" content="Fix muddy, echoey, quiet phone audio in your videos in one tap — free, right in your browser. Nothing uploads: your clip never leaves your device. Load, tap a preset, save.">
 <meta property="og:title" content="CrispPop — free one-tap audio repair">
 <meta property="og:description" content="Fix muddy, echoey, quiet audio in your videos in one tap. 100% in your browser — nothing uploads.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://legisignpro.github.io/clearcast/">
-<meta property="og:image" content="https://legisignpro.github.io/clearcast/ogcp.png">
+<meta property="og:url" content="https://crisppop.pages.dev/">
+<link rel="canonical" href="https://crisppop.pages.dev/">
+<meta property="og:image" content="https://crisppop.pages.dev/ogcp.png">
 <meta name="twitter:card" content="summary_large_image">
 <script>
 /* ── CrispPop config — the only lines you ever edit ─────────────────────
@@ -400,7 +414,7 @@ function confettiBoom(n){
 }
 
 // ── share loop: sharing earns bonus saves (up to BONUS_MAX) ──
-const SHARE_URL='https://legisignpro.github.io/clearcast/?src=friend';
+const SHARE_URL='https://crisppop.pages.dev/?src=friend';
 const BONUS_MAX=3;
 function bonusSaves(){try{return Math.min(BONUS_MAX,parseInt(localStorage.getItem('cc_bonus')||'0',10)||0);}catch(e){return 0;}}
 function saveLimit(){return FREE_EXPORT_LIMIT+bonusSaves();}
@@ -432,7 +446,7 @@ $('pshare').onclick=()=>{closePro();shareApp('pro_modal');};
 $('sharebtn').onclick=()=>shareApp('saves_row');
 
 // Returning from Stripe: set the Payment Link's after-payment redirect to
-// https://legisignpro.github.io/clearcast/?checkout=success so this fires.
+// https://crisppop.pages.dev/?checkout=success so this fires.
 if(location.search.indexOf('checkout=success')>=0){
   track('purchase_completed',{price:PRICE});
   try{localStorage.setItem('cc_pro','1');}catch(e){}
