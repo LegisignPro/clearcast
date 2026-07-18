@@ -270,6 +270,10 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     </div>
     <div id="pro" class="hidden"></div>
 
+    <div id="strengthrow" style="margin:2px 0 8px;padding:12px 16px 14px;background:rgba(255,255,255,.65);border:1.5px solid var(--line);border-radius:16px">
+      <label style="display:flex;justify-content:space-between;font-size:.82rem;font-weight:700;margin-bottom:9px;color:#294451">🎚 Fix strength <span id="strval" style="color:var(--accent)">100%</span></label>
+      <input type="range" id="strength" min="0" max="100" step="5" value="100">
+    </div>
     <div id="savesrow">
       <span id="savesleft"></span>
       <button id="cmpbtn" disabled title="Load a clip first">🎬 Before/After</button>
@@ -486,6 +490,9 @@ async function shareApp(source){
 }
 $('pshare').onclick=()=>{closePro();shareApp('pro_modal');};
 $('sharebtn').onclick=()=>shareApp('saves_row');
+// Fix Strength slider: 100% = the full preset, 0% = original audio. Blend requested by beta user.
+$('strength').oninput=()=>{const v=parseInt($('strength').value,10);state.strength=v/100;$('strval').textContent=v+'%';if(state.started)updateAudio();};
+$('strength').onchange=()=>track('strength_changed',{value:parseInt($('strength').value,10),preset:state.activePreset});
 
 // Returning from Stripe: set the Payment Link's after-payment redirect to
 // https://crisppop.pages.dev/?checkout=success so this fires.
@@ -526,43 +533,43 @@ function defaultParams(){return{
   deess:{amount:0,freq:6500}, tone:{warmth:0,presence:0},
   dist:{amount:0,ratio:6,mode:'dist2'}, sat:{drive:0,mode:'tube'},
   airAmt:0, width:1.0, target:'none', masterGain:0, ceiling:-1.0 };}
-const T={none:{gain:0,ceil:-1.0},tiktok:{gain:3,ceil:-1.0},reels:{gain:3,ceil:-1.0},youtube:{gain:1,ceil:-1.0},podcast:{gain:2,ceil:-1.5}};
+const T={none:{gain:0,ceil:-1.0},tiktok:{gain:1,ceil:-1.0},reels:{gain:1,ceil:-1.0},youtube:{gain:0.5,ceil:-1.0},podcast:{gain:0.5,ceil:-1.5}};
 const mk=(o)=>Object.assign(defaultParams(),o);
 
 // Order = width of appeal: hero fix for phone-shot video first (the most common
 // creator by far), universal wants next, niche/pro last, Reset (a utility) at the end.
 const PRESETS=[
   {id:'phone',  label:'Phone Rescue',     color:['#38c1a6','#12a594'], params:mk({declip:true,denoise:.5,dereverb:.25,gate:.25,hpf:85,lpf:14000,
-     fix:[{freq:400,q:1.5,gain:-3},{freq:800,q:1.2,gain:-2},{freq:3800,q:2.5,gain:-5}],comp:{threshold:-22,ratio:4,attack:5,release:120,knee:6,makeup:5},
-     deess:{amount:45,freq:6000},tone:{warmth:3,presence:1},sat:{drive:20,mode:'tube'},airAmt:25,target:'reels'})},
+     fix:[{freq:400,q:1.5,gain:-3},{freq:800,q:1.2,gain:-2},{freq:3800,q:2.5,gain:-5}],comp:{threshold:-22,ratio:4,attack:5,release:120,knee:6,makeup:2.5},
+     deess:{amount:45,freq:6000},tone:{warmth:3,presence:1},sat:{drive:14,mode:'tube'},airAmt:25,target:'reels'})},
   {id:'loud',   label:'Make it Loud',   /* broadband slam: heavy ratio + makeup into the limiter */     color:['#ff5a5f','#e11d48'], params:mk({hpf:70,lpf:17000,
-     fix:[{freq:250,q:1.2,gain:0},{freq:700,q:1.2,gain:0},{freq:4000,q:2,gain:-1}],comp:{threshold:-28,ratio:8,attack:5,release:120,knee:4,makeup:8},
-     dist:{amount:25,ratio:4,mode:'dist2'},tone:{presence:1,warmth:1},airAmt:15,target:'tiktok'})},
+     fix:[{freq:250,q:1.2,gain:0},{freq:700,q:1.2,gain:0},{freq:4000,q:2,gain:-1}],comp:{threshold:-28,ratio:6,attack:5,release:120,knee:4,makeup:5},
+     dist:{amount:14,ratio:4,mode:'dist2'},tone:{presence:1,warmth:1},airAmt:15,target:'tiktok'})},
   {id:'muddy',  label:'Fix Muddy',        color:['#9b7bff','#7c3aed'], params:mk({hpf:100,lpf:18000,
-     fix:[{freq:300,q:1.6,gain:-5},{freq:550,q:1.4,gain:-4},{freq:4000,q:2,gain:0}],comp:{threshold:-22,ratio:3,attack:15,release:180,knee:6,makeup:4},
+     fix:[{freq:300,q:1.6,gain:-5},{freq:550,q:1.4,gain:-4},{freq:4000,q:2,gain:0}],comp:{threshold:-22,ratio:3,attack:15,release:180,knee:6,makeup:2.5},
      tone:{warmth:-1,presence:3},airAmt:20,target:'youtube'})},
   {id:'vlog',   label:'Vlog / Talking',   color:['#ff9a52','#f97316'], params:mk({denoise:.4,dereverb:.2,gate:.2,hpf:80,lpf:16000,
-     fix:[{freq:300,q:1.2,gain:-2},{freq:900,q:1.2,gain:-1},{freq:4000,q:2,gain:0}],comp:{threshold:-22,ratio:4,attack:8,release:150,knee:6,makeup:5},
-     deess:{amount:30,freq:6800},tone:{warmth:1,presence:3},airAmt:30,sat:{drive:12,mode:'tube'},target:'reels'})},
+     fix:[{freq:300,q:1.2,gain:-2},{freq:900,q:1.2,gain:-1},{freq:4000,q:2,gain:0}],comp:{threshold:-22,ratio:4,attack:8,release:150,knee:6,makeup:2.5},
+     deess:{amount:30,freq:6800},tone:{warmth:1,presence:3},airAmt:30,sat:{drive:10,mode:'tube'},target:'reels'})},
   {id:'podcast',label:'Podcast Voice',    color:['#ff6f91','#e84f78'], params:mk({declip:true,denoise:.5,dereverb:.3,gate:.3,hpf:85,lpf:15000,
-     fix:[{freq:300,q:1.4,gain:-3},{freq:800,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:6,attack:5,release:150,knee:6,makeup:7},
-     deess:{amount:40,freq:6500},tone:{warmth:2,presence:2},dist:{amount:15,ratio:4,mode:'dist2'},airAmt:25,target:'podcast'})},
+     fix:[{freq:300,q:1.4,gain:-3},{freq:800,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:4.5,attack:5,release:150,knee:6,makeup:2.5},
+     deess:{amount:40,freq:6500},tone:{warmth:2,presence:2},dist:{amount:5,ratio:4,mode:'dist2'},airAmt:25,target:'podcast'})},
   {id:'interview',label:'Interview',      color:['#33bcd6','#159cbb'], params:mk({declip:true,denoise:.6,dereverb:.35,gate:.4,hpf:95,lpf:14000,
      /* drier + tighter than Podcast Voice: deeper room-mud and boxiness cuts + more presence,
         no saturation/air color — plus heavier denoise/gate via the restoration engine. */
-     fix:[{freq:350,q:1.4,gain:-4},{freq:1000,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:5,attack:6,release:150,knee:6,makeup:6},
+     fix:[{freq:350,q:1.4,gain:-4},{freq:1000,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:5,attack:6,release:150,knee:6,makeup:3},
      deess:{amount:40,freq:6500},tone:{warmth:1,presence:3},target:'podcast'})},
   {id:'harsh',  label:'Tame Harsh',       color:['#f4b53f','#e08a1e'], params:mk({hpf:80,lpf:13500,
-     fix:[{freq:250,q:1.2,gain:-1},{freq:700,q:1.2,gain:-1},{freq:3800,q:3,gain:-5}],comp:{threshold:-22,ratio:3,attack:15,release:200,knee:8,makeup:4},
+     fix:[{freq:250,q:1.2,gain:-1},{freq:700,q:1.2,gain:-1},{freq:3800,q:3,gain:-5}],comp:{threshold:-22,ratio:3,attack:15,release:200,knee:8,makeup:2.5},
      deess:{amount:60,freq:6000},tone:{warmth:2,presence:-2},target:'youtube'})},
   {id:'music',  label:'Music',            color:['#4ba7ef','#2f7fe0'], params:mk({denoise:.15,dereverb:.2,hpf:55,lpf:20000,
-     fix:[{freq:250,q:2,gain:-3},{freq:700,q:1.2,gain:-1},{freq:4000,q:2,gain:0}],comp:{threshold:-20,ratio:2.5,attack:35,release:180,knee:6,makeup:3},
-     tone:{warmth:2,presence:2},sat:{drive:15,mode:'tape'},airAmt:20,width:1.3,target:'youtube'})},
+     fix:[{freq:250,q:2,gain:-3},{freq:700,q:1.2,gain:-1},{freq:4000,q:2,gain:0}],comp:{threshold:-20,ratio:2.5,attack:35,release:180,knee:6,makeup:2},
+     tone:{warmth:2,presence:2},sat:{drive:12,mode:'tape'},airAmt:20,width:1.3,target:'youtube'})},
   {id:'flat',   label:'Reset',            color:['#7f93a3','#5f7688'], params:defaultParams()},
 ];
 const PRESET_BY_ID=Object.fromEntries(PRESETS.map(p=>[p.id,p]));
 
-const state={params:defaultParams(),activePreset:'flat',baseline:defaultParams(),face:'simple',bypass:false,loop:true,started:false,file:null,bypassSections:{}};
+const state={params:defaultParams(),activePreset:'flat',baseline:defaultParams(),face:'simple',bypass:false,strength:1,loop:true,started:false,file:null,bypassSections:{}};
 
 function eff(){ const p=clone(state.params),b=state.bypassSections;
   if(b.rest){p.declip=false;p.denoise=0;p.dereverb=0;p.gate=0;}
@@ -576,6 +583,18 @@ function eff(){ const p=clone(state.params),b=state.bypassSections;
   if(b.sat){p.sat.drive=0;}
   if(b.finish){p.airAmt=0;p.width=1;}
   if(b.loud){p.target='none';p.masterGain=0;}
+  // Fix Strength: interpolate every stage toward neutral (parameter-domain blend —
+  // no comb filtering, unlike mixing the delayed wet path with dry audio).
+  const s=(state.strength==null?1:state.strength);p._ts=s;
+  if(s<1){
+    p.denoise*=s;p.dereverb*=s;p.gate*=s;if(s<0.25)p.declip=false;
+    p.hpf=20+(p.hpf-20)*s;p.lpf=20000-(20000-p.lpf)*s;
+    p.fix.forEach(x=>x.gain*=s);p.peq.forEach(x=>x.gain*=s);
+    p.comp={threshold:p.comp.threshold*s,ratio:1+(p.comp.ratio-1)*s,attack:p.comp.attack,release:p.comp.release,knee:p.comp.knee,makeup:p.comp.makeup*s};
+    p.deess.amount*=s;p.tone.warmth*=s;p.tone.presence*=s;
+    p.dist.amount*=s;p.sat.drive*=s;p.airAmt*=s;p.width=1+(p.width-1)*s;
+    p.masterGain*=s;
+  }
   return p;
 }
 function makeCurve(drive,mode){ if(drive<=0)return null;
@@ -706,7 +725,7 @@ function buildGraph(){
   n.distShaper=ctx.createWaveShaper();n.distShaper.oversample='4x';n.sat=ctx.createWaveShaper();n.sat.oversample='4x';
   n.airShelf=biq('highshelf',9000,null,0);
   n.splitter=ctx.createChannelSplitter(2);n.merger=ctx.createChannelMerger(2);n.midG=ctx.createGain();n.sideG=ctx.createGain();n.invR=ctx.createGain();n.invR.gain.value=-1;n.sideInv=ctx.createGain();n.sideInv.gain.value=-1;
-  n.master=ctx.createGain();n.limiter=ctx.createDynamicsCompressor();n.limiter.knee.value=0;n.limiter.ratio.value=20;n.limiter.attack.value=0.003;n.limiter.release.value=0.1;
+  n.master=ctx.createGain();n.limiter=ctx.createDynamicsCompressor();n.limiter.knee.value=0;n.limiter.ratio.value=20;n.limiter.attack.value=0.003;n.limiter.release.value=0.22;
   n.dry=ctx.createGain();n.dry.gain.value=0;n.wet=ctx.createGain();n.mix=ctx.createGain();
   analyser=ctx.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=0.75;streamDest=ctx.createMediaStreamDestination();
   src.connect(n.hpf1);n.hpf1.connect(n.hpf2);n.hpf2.connect(n.lpf1);n.lpf1.connect(n.lpf2);
@@ -746,7 +765,7 @@ function updateAudio(){ if(!state.started)return;
   st(n.distComp.threshold,-(p.dist.amount/100)*30);st(n.distComp.ratio,p.dist.ratio);n.distShaper.curve=makeCurve(p.dist.amount*0.6,p.dist.mode);
   n.sat.curve=makeCurve(p.sat.drive,p.sat.mode);
   st(n.airShelf.gain,(p.airAmt/100)*8);st(n.sideG.gain,0.5*p.width);st(n.midG.gain,0.5);
-  const tp=T[p.target]||T.none;st(n.master.gain,dbToLin(p.masterGain+tp.gain));st(n.limiter.threshold,tp.ceil);
+  const tp=T[p.target]||T.none;st(n.master.gain,dbToLin(p.masterGain+tp.gain*(p._ts==null?1:p._ts)));st(n.limiter.threshold,tp.ceil);
   if(n.rest)n.rest.port.postMessage({declip:p.declip?1:0,denoise:p.denoise||0,dereverb:p.dereverb||0,gate:p.gate||0});
   st(n.dry.gain,state.bypass?1:0);st(n.wet.gain,state.bypass?0:1);
 }
@@ -879,7 +898,7 @@ const handleFile=e=>{const f=e.target.files[0];if(!f)return;state.file=f;video.s
   $('loadhint').classList.add('hidden');$('save').disabled=false;$('cmpbtn').disabled=false;$('cmpbtn').title='Make a shareable before/after clip';
   video.addEventListener('loadedmetadata',()=>{
     const d=video.duration||0;
-    if(d>90)toast('⏱️ Saving bakes in real time — this clip takes ~'+Math.ceil(d/60)+' min. Game\u2019s ready 🎮',4200);
+    if(d>90)toast('⏱️ Saving bakes in real time — this clip takes ~'+Math.ceil(d/60)+' min. Game’s ready 🎮',4200);
   },{once:true});
   try{if(!localStorage.getItem('cc_peek_hint')){localStorage.setItem('cc_peek_hint','1');
     setTimeout(()=>toast('👆 Hold the video to hear the original — release to snap back',4200),2600);}}catch(e){}
