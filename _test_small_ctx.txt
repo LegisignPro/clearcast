@@ -1,0 +1,3 @@
+    const d=video.duration||0;
+    if(d>90)toast('⏱️ Saving bakes in real time — this clip takes ~'+Math.ceil(d/60)+' min. Game’s ready 🎮',4200);
+  },{once:true});
