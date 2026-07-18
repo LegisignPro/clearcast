@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no" />
 <meta name="theme-color" content="#dff1fb" />
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CrispPop">
 <script>
 /* Old home → new home. Preserves path + query (incl. ?checkout=success). */
 if(location.hostname==='legisignpro.github.io'){
@@ -67,7 +71,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   .seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:7px 16px;border-radius:999px;cursor:pointer;font-size:.82rem}
   .seg button.on{background:#fff;color:var(--accent);box-shadow:0 2px 6px rgba(55,169,225,.25)}
   .vwrap{position:relative}
-  video{width:100%;min-height:190px;max-height:28vh;background:#fff;border:2px solid #fff;border-radius:var(--radius);object-fit:contain;display:block;box-shadow:0 8px 22px -8px rgba(41,68,81,.35)}
+  video{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;width:100%;min-height:190px;max-height:28vh;background:#fff;border:2px solid #fff;border-radius:var(--radius);object-fit:contain;display:block;box-shadow:0 8px 22px -8px rgba(41,68,81,.35)}
   .loadhint{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:0;cursor:pointer;font:inherit;
     background:linear-gradient(160deg,#fff2f8,#e6f4fc);border-radius:var(--radius);box-shadow:inset 0 0 0 3px #ffd0e0}
   .loadhint .lh-candy{animation:bounce 1.15s ease-in-out infinite;filter:drop-shadow(0 6px 8px rgba(232,79,120,.35))}
@@ -102,13 +106,13 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   .card .sub{color:var(--muted);font-size:.76rem;margin:0 0 14px}
   .badge{font-size:.6rem;color:var(--accent);background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:700}
   .grow{flex:1}
-  .byp{border:1.5px solid var(--line);background:var(--surface2);color:var(--muted);font:inherit;font-weight:800;font-size:.62rem;
-    text-transform:uppercase;letter-spacing:.6px;padding:6px 13px;border-radius:999px;cursor:pointer;transition:.15s}
+  .byp{border:1.5px solid var(--line);background:var(--surface2);color:var(--muted);font:inherit;font-weight:800;font-size:.7rem;
+    text-transform:uppercase;letter-spacing:.6px;padding:11px 16px;border-radius:999px;cursor:pointer;transition:.15s;min-height:40px}
   .byp.on{background:var(--danger);border-color:var(--danger);color:#fff;box-shadow:0 0 0 3px rgba(242,115,154,.35),0 0 18px 3px rgba(242,115,154,.85)}
   .card.bypassed{opacity:.55}
 
   .targets{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-  .target{padding:12px 2px;background:var(--surface2);border:1.5px solid var(--line);border-radius:14px;color:var(--text);font:inherit;font-size:.66rem;font-weight:700;cursor:pointer;text-align:center}
+  .target{padding:14px 2px;min-height:44px;background:var(--surface2);border:1.5px solid var(--line);border-radius:14px;color:var(--text);font:inherit;font-size:.66rem;font-weight:700;cursor:pointer;text-align:center}
   .target.on{background:#fff;border-color:var(--accent);color:var(--accent);box-shadow:0 3px 10px rgba(55,169,225,.28)}
 
   .ctrl{margin:16px 0}.ctrl:first-of-type{margin-top:0}
@@ -223,6 +227,11 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   .privline{text-align:center;font-size:.78rem;font-weight:700;color:#26b98d;margin:0 0 14px}
   .betaline{text-align:center;font-size:.74rem;font-weight:600;color:#7f9dad;margin:0 0 14px;line-height:1.5}
   .betaline a{color:#e84f78;font-weight:800;text-decoration:none}
+  #about summary{cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent}
+  #about summary::-webkit-details-marker{display:none}
+  #about summary h2{display:inline}
+  #about summary::after{content:' ▾';color:#7f9dad;font-size:.8rem}
+  #about[open] summary::after{content:' ▴'}
   #about{margin:26px 0 8px;padding:18px;background:rgba(255,255,255,.6);border:1.5px solid var(--line);border-radius:var(--radius)}
   #about h2{font-size:1rem;font-weight:800;color:var(--accent);margin:0 0 8px}
   #about h3{font-size:.85rem;font-weight:800;color:#294451;margin:14px 0 6px}
@@ -267,12 +276,12 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
       <button id="sharebtn">Share → +1 save</button>
     </div>
 
-    <section id="about">
-      <h2>What is CrispPop?</h2>
+    <details id="about">
+      <summary><h2>🍭 What is CrispPop?</h2></summary>
       <p>Free, one-tap audio repair for phone-shot video — fixes muddy, echoey, harsh, or quiet sound and bakes it straight back into your clip, still in sync. 🔒 100% private: everything runs in your browser; your video never uploads.</p>
       <p>Under the candy, each preset drives a real 14-stage studio chain — de-clip, de-noise, de-reverb, and gate up front, then corrective EQ, compression, split-band de-essing, saturation, and platform-matched loudness. Flip to Studio mode to drive every stage yourself. (Restoration runs on our in-browser engine v1 — a deeper native engine is in the works.)</p>
       <p>CrispPop is an indie project in open beta, tuned by a working musician — your first 5 saves are free on everything (free saves carry a tiny CrispPop badge; Pro takes it off). Found a bug or want a feature? <a href="https://forms.gle/uMghNNNsrMZxjstA8" target="_blank" rel="noopener" class="fblink" style="color:#e84f78;font-weight:800">Tell us in 60 seconds</a> — every response is read by the person who builds this, and it decides what ships next.</p>
-    </section>
+    </details>
   </div>
 </div>
 
@@ -292,9 +301,9 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     <h2>🍭 CrispPop</h2>
     <p class="psub">Pro sound for any video. One tap — no re-syncing.</p>
     <ol class="steps">
-      <li><b>Load</b> a clip — it plays already fixed. Tap <b>Before</b> to hear the original.</li>
-      <li>Try the other candies — each one is a full studio chain. (Control freaks: flip to Studio for every knob.)</li>
-      <li><b>Save</b> — the new sound bakes straight into your video. No splitting audio, no editing apps, no re-aligning. 🎮</li>
+      <li><b>Load</b> a clip — it plays fixed. <b>Before</b> = hear the original.</li>
+      <li>Tap candies. Each one is a full studio chain.</li>
+      <li><b>Save</b> — fixed audio bakes in. No re-syncing. 🎮</li>
     </ol>
     <p class="privline">🔒 Nothing uploads — your clip never leaves your device.</p>
     <p class="betaline">🧪 CrispPop is in open beta — you're one of the first testers, and your first 5 saves are on the house. Something sound off? Missing a feature? <a href="https://forms.gle/uMghNNNsrMZxjstA8" target="_blank" rel="noopener" class="fblink">Tell us</a> — it decides what gets built next.</p>
@@ -868,6 +877,12 @@ if(('ontouchstart' in window)||navigator.maxTouchPoints>0)$('recpill').classList
 video.loop=state.loop;
 const handleFile=e=>{const f=e.target.files[0];if(!f)return;state.file=f;video.src=URL.createObjectURL(f);video.loop=state.loop;
   $('loadhint').classList.add('hidden');$('save').disabled=false;$('cmpbtn').disabled=false;$('cmpbtn').title='Make a shareable before/after clip';
+  video.addEventListener('loadedmetadata',()=>{
+    const d=video.duration||0;
+    if(d>90)toast('⏱️ Saving bakes in real time — this clip takes ~'+Math.ceil(d/60)+' min. Game’s ready 🎮',4200);
+  },{once:true});
+  try{if(!localStorage.getItem('cc_peek_hint')){localStorage.setItem('cc_peek_hint','1');
+    setTimeout(()=>toast('👆 Hold the video to hear the original — release to snap back',4200),2600);}}catch(e){}
   track('file_loaded',{type:f.type||'unknown',size_mb:+(f.size/1048576).toFixed(1)});
   // zero-click wow: apply the hero preset and start playing immediately —
   // the first thing a new user hears is their clip, fixed.
@@ -887,6 +902,19 @@ document.addEventListener('pointerdown',(e)=>{const t=e.target.closest('button')
     const a=Math.random()*6.28,d=18+Math.random()*26;s.style.setProperty('--dx',Math.cos(a)*d+'px');s.style.setProperty('--dy',(Math.sin(a)*d-8)+'px');
     document.body.appendChild(s);setTimeout(()=>s.remove(),560);}
   if(navigator.vibrate)navigator.vibrate(8);},{passive:true});
+// hold the video to peek the original (release = back to fixed)
+let _holdT=null,_holding=false;
+function _peekEnd(){clearTimeout(_holdT);_holdT=null;
+  if(_holding){_holding=false;state.bypass=false;updateAudio();
+    $('abchip').classList.add('hidden');$('abtxt').textContent='Before';$('ab').classList.remove('on');}}
+video.addEventListener('pointerdown',e=>{
+  if(!state.file||state.bypass||!$('rec').classList.contains('hidden'))return;
+  _holdT=setTimeout(()=>{_holding=true;state.bypass=true;updateAudio();
+    $('abchip').classList.remove('hidden');$('abtxt').textContent='After ✨';$('ab').classList.add('on');},170);});
+video.addEventListener('pointerup',_peekEnd);
+video.addEventListener('pointercancel',_peekEnd);
+video.addEventListener('pointerleave',_peekEnd);
+video.addEventListener('contextmenu',e=>{if(state.file)e.preventDefault();});
 $('loop').onclick=()=>{state.loop=!state.loop;video.loop=state.loop;$('loop').classList.toggle('on',state.loop);};
 video.addEventListener('play',()=>{if(!state.started)buildGraph();if(ctx&&ctx.state==='suspended')ctx.resume();$('playtxt').textContent='Pause';});
 video.addEventListener('pause',()=>$('playtxt').textContent='Play');
