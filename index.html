@@ -152,6 +152,19 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     background:linear-gradient(160deg,#ffd07a,#f0a53d);box-shadow:0 4px 10px -3px rgba(240,165,61,.6),inset 0 2px 3px rgba(255,255,255,.5)}
   #cmpbtn:disabled{opacity:.45;cursor:default}
   .hidden{display:none!important}
+  /* toast: errors + key confirmations, floats above the bar, never collides */
+  .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(8px);bottom:calc(96px + var(--safe-b));z-index:210;
+    background:rgba(41,68,81,.95);color:#fff;font-weight:800;font-size:.82rem;padding:12px 18px;border-radius:999px;
+    box-shadow:0 8px 20px rgba(0,0,0,.3);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:88vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  /* in-app browser rescue banner */
+  .iab{position:fixed;top:0;left:0;right:0;z-index:140;background:linear-gradient(160deg,#f7a1bf,#e84f78);color:#fff;
+    font-weight:800;font-size:.8rem;padding:12px 44px 12px 14px;line-height:1.45;box-shadow:0 4px 14px rgba(232,79,120,.4)}
+  .iab b{text-decoration:underline}
+  .iabx{position:absolute;top:8px;right:8px;border:0;background:rgba(255,255,255,.25);color:#fff;width:28px;height:28px;border-radius:50%;font-weight:900;cursor:pointer}
+  /* record-now pill on the load hint */
+  .recpill{margin-top:4px;background:linear-gradient(160deg,#8fd3f4,#37a9e1);color:#fff;font-weight:800;font-size:.8rem;
+    padding:9px 16px;border-radius:999px;box-shadow:0 4px 10px -3px rgba(55,169,225,.6)}
 
   /* recording overlay + candy brickbreaker */
   .rec{position:fixed;inset:0;z-index:100;background:linear-gradient(180deg,#ffe3ef 0%,#e6f4fc 100%);display:flex;flex-direction:column;align-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 20px;overflow:hidden}
@@ -217,6 +230,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
 </style>
 </head>
 <body>
+<div id="iab" class="iab hidden">🍬 Heads up — this in-app browser can block saving. Tap <b>⋯</b> (or the share icon) → <b>Open in Safari / Browser</b> and everything works.<button id="iabx" class="iabx">✕</button></div>
 <div class="app">
   <div class="top">
     <div class="brand">
@@ -226,11 +240,13 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
       <div class="seg"><button id="mSimple" class="on">Simple</button><button id="mPro">Studio</button></div>
     </div>
     <input type="file" id="file" accept="video/*,audio/*" hidden>
+    <input type="file" id="filecam" accept="video/*" capture="user" hidden>
     <div class="vwrap">
       <video id="video" playsinline></video>
       <button id="loadhint" class="loadhint">
         <svg viewBox="0 0 48 48" width="62" height="62" class="lh-candy"><circle cx="22" cy="17" r="15" fill="#ff6f91"/><path d="M22 5a12 12 0 000 24 8 8 0 010-16 4 4 0 000-8z" fill="#fff" opacity=".55"/><rect x="20.5" y="29" width="3" height="16" rx="1.5" fill="#7bd67b"/></svg>
         <span class="lh-txt">Tap to load your video!</span>
+        <span id="recpill" class="recpill hidden">🎥 or record one now</span>
       </button>
       <div id="abchip" class="abchip hidden">🙉 BEFORE — original audio</div>
       <button id="loop" class="loop on"><svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-1px"><circle cx="12" cy="12" r="8" fill="#fff"/><path d="M12 4a8 8 0 010 16z" fill="rgba(0,0,0,.14)"/></svg> Loop</button>
@@ -403,6 +419,18 @@ $('pcta').onclick=()=>{
   }
 };
 
+// ── toast: visible feedback that can't collide with content ──
+let _toastEl=null,_toastT=null;
+function toast(msg,ms){
+  if(!_toastEl){_toastEl=document.createElement('div');_toastEl.className='toast';document.body.appendChild(_toastEl);}
+  _toastEl.textContent=msg;_toastEl.classList.add('show');
+  clearTimeout(_toastT);_toastT=setTimeout(()=>_toastEl.classList.remove('show'),ms||3000);
+}
+// ── screen wake lock: baking runs realtime; a locked screen kills the export ──
+let _wl=null;
+async function keepAwake(){try{if('wakeLock' in navigator){_wl=await navigator.wakeLock.request('screen');window.__wakeActive=true;}}catch(e){}}
+function releaseAwake(){try{if(_wl){_wl.release();_wl=null;}}catch(e){}window.__wakeActive=false;}
+
 // ── confetti engine (celebration + share rewards) ──
 function confettiBoom(n){
   const cols=['#ff6f91','#ffd23f','#5cc6f2','#7bd67b','#9b7bff','#e84f78','#f0a53d'];
@@ -444,6 +472,7 @@ async function shareApp(source){
   if(granted)confettiBoom(35);
   const btn=$('sharebtn');
   btn.textContent=granted?'+1 save added! 🍬':(copied?'🔗 Link copied!':'Thanks! 🍬');
+  toast(granted?('🍬 +1 bonus save unlocked ('+bonusSaves()+'/'+BONUS_MAX+')'):(copied?'🔗 Link copied — send it to a friend!':'Thanks for sharing! 🍬'));
   setTimeout(renderSaves,2200);
 }
 $('pshare').onclick=()=>{closePro();shareApp('pro_modal');};
@@ -469,6 +498,14 @@ function openSplash(src){$('smask').classList.remove('hidden');track('splash_sho
 $('sgo').onclick=()=>{$('smask').classList.add('hidden');try{localStorage.setItem('cc_seen_splash','1');}catch(e){}track('splash_dismissed');};
 $('helpBtn').onclick=()=>openSplash('help');
 try{if(!localStorage.getItem('cc_seen_splash'))openSplash('first_visit');}catch(e){openSplash('first_visit');}
+// in-app browsers (IG/TikTok/FB/Snap) sandbox downloads — steer people to a real browser
+(function(){
+  const ua=navigator.userAgent||'';
+  const inapp=/Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|Snapchat|Line\/|Twitter/i.test(ua);
+  let dism=false;try{dism=!!sessionStorage.getItem('cc_iab_x');}catch(e){}
+  if(inapp&&!dism){$('iab').classList.remove('hidden');track('inapp_browser_shown');}
+  $('iabx').onclick=()=>{$('iab').classList.add('hidden');try{sessionStorage.setItem('cc_iab_x','1');}catch(e){}};
+})();
 
 function defaultParams(){return{
   declip:false,denoise:0,dereverb:0,gate:0, hpf:20,lpf:20000,
@@ -824,8 +861,12 @@ $('mSimple').onclick=()=>setFace('simple');$('mPro').onclick=()=>{setFace('pro')
 
 // ---- transport ----
 function openFile(){$('file').click();}
+$('file').onchange=e=>handleFile(e);
+$('filecam').onchange=e=>handleFile(e);
+$('recpill').addEventListener('click',e=>{e.stopPropagation();track('record_now_tapped');$('filecam').click();});
+if(('ontouchstart' in window)||navigator.maxTouchPoints>0)$('recpill').classList.remove('hidden');
 video.loop=state.loop;
-$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;state.file=f;video.src=URL.createObjectURL(f);video.loop=state.loop;
+const handleFile=e=>{const f=e.target.files[0];if(!f)return;state.file=f;video.src=URL.createObjectURL(f);video.loop=state.loop;
   $('loadhint').classList.add('hidden');$('save').disabled=false;$('cmpbtn').disabled=false;$('cmpbtn').title='Make a shareable before/after clip';
   track('file_loaded',{type:f.type||'unknown',size_mb:+(f.size/1048576).toFixed(1)});
   // zero-click wow: apply the hero preset and start playing immediately —
@@ -991,12 +1032,12 @@ $('cmpbtn').onclick=async()=>{
   if(cred&&cred[0]!=='@')cred='@'+cred;
   if(cred.length>28)cred=cred.slice(0,28);
   try{localStorage.setItem('cc_credit',cred);}catch(e){}
-  const btn=$('cmpbtn'),old=btn.textContent;btn.disabled=true;btn.textContent='🎬 Baking clip…';
+  const btn=$('cmpbtn'),old=btn.textContent;btn.disabled=true;btn.textContent='🎬 Baking clip…';keepAwake();
   track('compare_started',{preset:state.activePreset||'custom',credited:!!cred});
   try{const ext=await exportCompare(cred);track('compare_completed',{ext:ext,preset:state.activePreset||'custom',credited:!!cred});
     btn.textContent='🎉 Post it!';confettiBoom(30);}
-  catch(e){track('compare_failed',{msg:String((e&&e.message)||e).slice(0,120)});btn.textContent='😵 '+String((e&&e.message)||'failed').slice(0,24);}
-  finally{setTimeout(()=>{btn.textContent=old;btn.disabled=false;},2400);}
+  catch(e){track('compare_failed',{msg:String((e&&e.message)||e).slice(0,120)});toast('😵 '+String((e&&e.message)||'failed').slice(0,60));btn.textContent='😵 failed';}
+  finally{releaseAwake();setTimeout(()=>{btn.textContent=old;btn.disabled=false;},2400);}
 };
 function exportRecord(){
   return new Promise((resolve,reject)=>{
@@ -1070,8 +1111,8 @@ function sparkle(){const em=['✨','🍬','🍭','⭐','🍩'];for(let i=0;i<14;
   s.style.left=Math.random()*94+'%';s.style.animationDuration=(2.5+Math.random()*2.5)+'s';s.style.animationDelay=(Math.random()*3)+'s';$('rec').appendChild(s);}}
 function clearSparkles(){$('rec').querySelectorAll('.sparkle').forEach(s=>s.remove());}
 
-$('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a clip first.';return;}
-  if(state.bypass){$('status').textContent='Switch back to After before saving.';return;}
+$('save').onclick=async()=>{ if(!state.file){toast('Load a clip first 🍭');return;}
+  if(state.bypass){toast('Switch back to After ✨ before saving');return;}
   // ── the gate: preview is always free, saving is where Pro begins ──
   const gate=exportAllowed();
   if(!gate.ok){
@@ -1082,18 +1123,19 @@ $('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a cli
   }
   if(!state.started)buildGraph(); if(ctx&&ctx.state==='suspended')await ctx.resume();
   const savHTML=$('save').innerHTML; $('save').disabled=true;$('save').textContent='Baking…';
-  $('rec').classList.remove('hidden');sparkle();Game.start();
+  $('rec').classList.remove('hidden');sparkle();Game.start();keepAwake();
   const prog=setInterval(()=>{if(video.duration){const pct=Math.min(100,Math.round(video.currentTime/video.duration*100));$('recpct').textContent=pct+'%';$('recfill').style.width=pct+'%';}},150);
   try{const ext=await exportRecord();
     let msg='Saved CrispPop.'+ext.toUpperCase();
     if(gate.free){bumpExports();const left=Math.max(0,saveLimit()-exportsUsed());msg+=' · '+left+' free save'+(left===1?'':'s')+' left';}
     renderSaves();
+    toast('✅ '+msg);
     $('status').textContent=msg;
     track('export_completed',{ext:ext,duration_s:Math.round(video.duration||0),preset:state.activePreset||'custom',free_exports_left:gate.free?Math.max(0,saveLimit()-exportsUsed()):null});
     if(!proShownThisSession&&!isPro())setTimeout(()=>openPro('post_export'),900);}
-  catch(e){console.warn(e);$('status').textContent='Export failed: '+((e&&e.message)||e);
+  catch(e){console.warn(e);toast('😵 Export failed: '+String((e&&e.message)||e).slice(0,80));$('status').textContent='Export failed: '+((e&&e.message)||e);
     track('export_failed',{msg:String((e&&e.message)||e).slice(0,120)});}
-  finally{clearInterval(prog);Game.stop();clearSparkles();$('rec').classList.add('hidden');$('save').disabled=false;$('save').innerHTML=savHTML;}};
+  finally{releaseAwake();clearInterval(prog);Game.stop();clearSparkles();$('rec').classList.add('hidden');$('save').disabled=false;$('save').innerHTML=savHTML;}};
 
 applyPreset('flat',true);renderSaves();draw();
 </script>
