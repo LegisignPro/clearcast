@@ -53,6 +53,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     --safe-b:env(safe-area-inset-bottom,0px);
   }
   *{box-sizing:border-box}
+  button,input[type=range]{touch-action:manipulation;-webkit-user-select:none;user-select:none}
   html,body{margin:0;height:100%}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     background:linear-gradient(180deg,#d7eefb 0%,#ffffff 55%) fixed;color:var(--text);-webkit-font-smoothing:antialiased}
@@ -75,6 +76,8 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
   @keyframes pulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.09);opacity:1}}
   .sprk{position:fixed;width:9px;height:9px;border-radius:50%;pointer-events:none;z-index:200;transform:translate(-50%,-50%);animation:sprk .55s ease-out forwards}
   @keyframes sprk{to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.2);opacity:0}}
+  .abchip{position:absolute;top:10px;left:10px;z-index:5;background:rgba(140,47,66,.92);color:#fff;font-weight:900;font-size:.7rem;
+    padding:7px 12px;border-radius:999px;pointer-events:none;box-shadow:0 3px 8px rgba(0,0,0,.25);letter-spacing:.3px}
   .loop{position:absolute;top:10px;right:10px;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:800;font-size:.72rem;
     cursor:pointer;background:rgba(255,255,255,.85);color:var(--muted);backdrop-filter:blur(6px);box-shadow:0 3px 8px rgba(0,0,0,.2)}
   .loop.on{background:linear-gradient(160deg,#5cc6f2,var(--accent));color:#fff}
@@ -229,6 +232,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
         <svg viewBox="0 0 48 48" width="62" height="62" class="lh-candy"><circle cx="22" cy="17" r="15" fill="#ff6f91"/><path d="M22 5a12 12 0 000 24 8 8 0 010-16 4 4 0 000-8z" fill="#fff" opacity=".55"/><rect x="20.5" y="29" width="3" height="16" rx="1.5" fill="#7bd67b"/></svg>
         <span class="lh-txt">Tap to load your video!</span>
       </button>
+      <div id="abchip" class="abchip hidden">🙉 BEFORE — original audio</div>
       <button id="loop" class="loop on"><svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-1px"><circle cx="12" cy="12" r="8" fill="#fff"/><path d="M12 4a8 8 0 010 16z" fill="rgba(0,0,0,.14)"/></svg> Loop</button>
     </div>
     <canvas class="meter" id="meter"></canvas>
@@ -262,7 +266,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
 <div class="bar">
   <button id="load"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-2px"><circle cx="12" cy="12" r="5.5" fill="#fff"/><path d="M1 12l6-3.5v7z" fill="#fff"/><path d="M23 12l-6-3.5v7z" fill="#fff"/></svg> Load</button>
   <button id="play"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-2px"><path d="M12 3c-4 0-7 5-8 10-.3 1.5 1 3 3 3h10c2 0 3.3-1.5 3-3-1-5-4-10-8-10z" fill="#fff"/></svg> <span id="playtxt">Play</span></button>
-  <button id="ab"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-2px"><circle cx="12" cy="12" r="8" fill="#fff"/><path d="M12 4a8 8 0 010 16z" fill="rgba(0,0,0,.14)"/></svg> <span id="abtxt">A/B</span></button>
+  <button id="ab"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-2px"><circle cx="12" cy="12" r="8" fill="#fff"/><path d="M12 4a8 8 0 010 16z" fill="rgba(0,0,0,.14)"/></svg> <span id="abtxt">Before</span></button>
   <button id="save" disabled><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-2px"><circle cx="10" cy="8.5" r="6.5" fill="#fff"/><rect x="9" y="13" width="2" height="9" rx="1" fill="#fff"/></svg> Save</button>
 </div>
 <div id="status"></div>
@@ -272,7 +276,7 @@ if(window.CC.POSTHOG_KEY.indexOf("phc_")===0 && window.CC.POSTHOG_KEY.indexOf("P
     <h2>🍭 CrispPop</h2>
     <p class="psub">Pro sound for any video. One tap — no re-syncing.</p>
     <ol class="steps">
-      <li><b>Load</b> any video or audio clip — it starts playing with the fix already on. Tap <b>A/B</b> to hear before vs after.</li>
+      <li><b>Load</b> a clip — it plays already fixed. Tap <b>Before</b> to hear the original.</li>
       <li>Try the other candies — each one is a full studio chain. (Control freaks: flip to Studio for every knob.)</li>
       <li><b>Save</b> — the new sound bakes straight into your video. No splitting audio, no editing apps, no re-aligning. 🎮</li>
     </ol>
@@ -829,7 +833,7 @@ $('file').onchange=e=>{const f=e.target.files[0];if(!f)return;state.file=f;video
   applyPreset('phone',true);
   track('preset_applied',{preset:'phone',auto:true});
   video.play().then(()=>{
-    $('status').textContent='✨ Hearing Phone Rescue — tap A/B to compare, or try another candy.';
+    $('status').textContent='✨ Hearing Phone Rescue — tap Before to compare, or try another candy.';
   }).catch(()=>{
     $('status').textContent='✨ Phone Rescue is on — tap Play to hear it.';
   });};
@@ -846,7 +850,10 @@ $('loop').onclick=()=>{state.loop=!state.loop;video.loop=state.loop;$('loop').cl
 video.addEventListener('play',()=>{if(!state.started)buildGraph();if(ctx&&ctx.state==='suspended')ctx.resume();$('playtxt').textContent='Pause';});
 video.addEventListener('pause',()=>$('playtxt').textContent='Play');
 $('play').onclick=()=>{if(!video.src){openFile();return;}video.paused?video.play():video.pause();};
-$('ab').onclick=()=>{state.bypass=!state.bypass;$('ab').classList.toggle('on',state.bypass);$('abtxt').textContent=state.bypass?'Raw':'A/B';updateAudio();};
+$('ab').onclick=()=>{state.bypass=!state.bypass;$('ab').classList.toggle('on',state.bypass);
+  $('abtxt').textContent=state.bypass?'After ✨':'Before';
+  $('abchip').classList.toggle('hidden',!state.bypass);
+  updateAudio();};
 
 // ---- export: 100% client-side (MediaRecorder), no CDN, works on Vercel free ----
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href);},1000);}
@@ -1064,7 +1071,7 @@ function sparkle(){const em=['✨','🍬','🍭','⭐','🍩'];for(let i=0;i<14;
 function clearSparkles(){$('rec').querySelectorAll('.sparkle').forEach(s=>s.remove());}
 
 $('save').onclick=async()=>{ if(!state.file){$('status').textContent='Load a clip first.';return;}
-  if(state.bypass){$('status').textContent='Turn off A/B before saving.';return;}
+  if(state.bypass){$('status').textContent='Switch back to After before saving.';return;}
   // ── the gate: preview is always free, saving is where Pro begins ──
   const gate=exportAllowed();
   if(!gate.ok){
