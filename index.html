@@ -879,7 +879,7 @@ const handleFile=e=>{const f=e.target.files[0];if(!f)return;state.file=f;video.s
   $('loadhint').classList.add('hidden');$('save').disabled=false;$('cmpbtn').disabled=false;$('cmpbtn').title='Make a shareable before/after clip';
   video.addEventListener('loadedmetadata',()=>{
     const d=video.duration||0;
-    if(d>90)toast('⏱️ Saving bakes in real time — this clip takes ~'+Math.ceil(d/60)+' min. Game’s ready 🎮',4200);
+    if(d>90)toast('⏱️ Saving bakes in real time — this clip takes ~'+Math.ceil(d/60)+' min. Game\\u2019s ready 🎮',4200);
   },{once:true});
   try{if(!localStorage.getItem('cc_peek_hint')){localStorage.setItem('cc_peek_hint','1');
     setTimeout(()=>toast('👆 Hold the video to hear the original — release to snap back',4200),2600);}}catch(e){}
