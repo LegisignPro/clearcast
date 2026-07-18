@@ -1,0 +1,25 @@
+// ---- transport ----
+function openFile(){$('file').click();}
+$('file').onchange=e=>handleFile(e);
+$('filecam').onchange=e=>handleFile(e);
+$('recpill').addEventListener('click',e=>{e.stopPropagation();track('record_now_tapped');$('filecam').click();});
+if(('ontouchstart' in window)||navigator.maxTouchPoints>0)$('recpill').classList.remove('hidden');
+video.loop=state.loop;
+const handleFile=e=>{const f=e.target.files[0];if(!f)return;state.file=f;video.src=URL.createObjectURL(f);video.loop=state.loop;
+  $('loadhint').classList.add('hidden');$('save').disabled=false;$('cmpbtn').disabled=false;$('cmpbtn').title='Make a shareable before/after clip';
+  video.addEventListener('loadedmetadata',()=>{
+    const d=video.duration||0;
+    if(d>90)toast('⏱️ Saving bakes in real time — this clip takes ~'+Math.ceil(d/60)+' min. Game’s ready 🎮',4200);
+  },{once:true});
+  try{if(!localStorage.getItem('cc_peek_hint')){localStorage.setItem('cc_peek_hint','1');
+    setTimeout(()=>toast('👆 Hold the video to hear the original — release to snap back',4200),2600);}}catch(e){}
+  track('file_loaded',{type:f.type||'unknown',size_mb:+(f.size/1048576).toFixed(1)});
+  applyPreset('phone',true);
+  track('preset_applied',{preset:'phone',auto:true});
+  video.play().then(()=>{
+    $('status').textContent='✨ Hearing Phone Rescue — tap Before to compare, or try another candy.';
+  }).catch(()=>{
+    $('status').textContent='✨ Phone Rescue is on — tap Play to hear it.';
+  });};
+$('load').onclick=openFile;
+$('loadhint').onclick=openFile;
