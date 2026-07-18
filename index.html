@@ -869,7 +869,7 @@ function drawWM(g,w,h){
 // raw (bypassed) audio under a BEFORE banner, then the fixed audio under AFTER.
 // Free, unlimited, doesn't touch the save cap, always watermarked: it exists to
 // be posted. Users make our TikToks for us.
-function exportCompare(){
+function exportCompare(cred){
   return new Promise((resolve,reject)=>{
     const at=streamDest.stream.getAudioTracks()[0]; if(!at)return reject(new Error('no audio'));
     if(!((video.videoWidth||0)>0))return reject(new Error('Video clips only'));
@@ -911,12 +911,25 @@ function exportCompare(){
       const grad=g2.createLinearGradient(0,0,0,vh);grad.addColorStop(0,'#ffe3ef');grad.addColorStop(1,'#d7eefb');
       g2.fillStyle=grad;g2.fillRect(-30,-30,vw+60,vh+60);
       g2.textAlign='center';
-      g2.font='900 '+Math.round(vh*0.085)+'px '+FONT;
-      g2.fillStyle='#e84f78';g2.fillText('🍬 CrispPop',vw/2,vh*0.42);
-      g2.font='800 '+Math.round(vh*0.037)+'px '+FONT;
-      g2.fillStyle='#294451';g2.fillText('free 1-tap audio repair',vw/2,vh*0.505);
-      g2.font='800 '+Math.round(vh*0.034)+'px '+FONT;
-      g2.fillStyle='#37a9e1';g2.fillText('crisppop.pages.dev',vw/2,vh*0.585);
+      if(cred){
+        g2.font='800 '+Math.round(vh*0.032)+'px '+FONT;
+        g2.fillStyle='#7f9dad';g2.fillText('✨ audio glow-up for ✨',vw/2,vh*0.30);
+        g2.font='900 '+Math.round(vh*0.055)+'px '+FONT;
+        g2.fillStyle='#e84f78';g2.fillText(cred,vw/2,vh*0.375);
+        g2.font='900 '+Math.round(vh*0.075)+'px '+FONT;
+        g2.fillStyle='#e84f78';g2.fillText('🍬 CrispPop',vw/2,vh*0.52);
+        g2.font='800 '+Math.round(vh*0.035)+'px '+FONT;
+        g2.fillStyle='#294451';g2.fillText('free 1-tap audio repair',vw/2,vh*0.60);
+        g2.font='800 '+Math.round(vh*0.033)+'px '+FONT;
+        g2.fillStyle='#37a9e1';g2.fillText('crisppop.pages.dev',vw/2,vh*0.67);
+      }else{
+        g2.font='900 '+Math.round(vh*0.085)+'px '+FONT;
+        g2.fillStyle='#e84f78';g2.fillText('🍬 CrispPop',vw/2,vh*0.42);
+        g2.font='800 '+Math.round(vh*0.037)+'px '+FONT;
+        g2.fillStyle='#294451';g2.fillText('free 1-tap audio repair',vw/2,vh*0.505);
+        g2.font='800 '+Math.round(vh*0.034)+'px '+FONT;
+        g2.fillStyle='#37a9e1';g2.fillText('crisppop.pages.dev',vw/2,vh*0.585);
+      }
     }
     function draw(){
       if(!drawing)return;
@@ -966,9 +979,14 @@ function exportCompare(){
 $('cmpbtn').onclick=async()=>{
   if(!state.file)return;
   if(!state.started)buildGraph(); if(ctx&&ctx.state==='suspended')await ctx.resume();
+  let cred='';
+  try{cred=(prompt('Credit a creator on the end card? Their @handle (optional — leave blank to skip):',localStorage.getItem('cc_credit')||'')||'').trim();}catch(e){}
+  if(cred&&cred[0]!=='@')cred='@'+cred;
+  if(cred.length>28)cred=cred.slice(0,28);
+  try{localStorage.setItem('cc_credit',cred);}catch(e){}
   const btn=$('cmpbtn'),old=btn.textContent;btn.disabled=true;btn.textContent='🎬 Baking clip…';
-  track('compare_started',{preset:state.activePreset||'custom'});
-  try{const ext=await exportCompare();track('compare_completed',{ext:ext,preset:state.activePreset||'custom'});
+  track('compare_started',{preset:state.activePreset||'custom',credited:!!cred});
+  try{const ext=await exportCompare(cred);track('compare_completed',{ext:ext,preset:state.activePreset||'custom',credited:!!cred});
     btn.textContent='🎉 Post it!';confettiBoom(30);}
   catch(e){track('compare_failed',{msg:String((e&&e.message)||e).slice(0,120)});btn.textContent='😵 '+String((e&&e.message)||'failed').slice(0,24);}
   finally{setTimeout(()=>{btn.textContent=old;btn.disabled=false;},2400);}
