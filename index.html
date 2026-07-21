@@ -545,9 +545,9 @@ const mk=(o)=>Object.assign(defaultParams(),o);
 // Order = width of appeal: hero fix for phone-shot video first (the most common
 // creator by far), universal wants next, niche/pro last, Reset (a utility) at the end.
 const PRESETS=[
-  {id:'phone',  label:'Phone Rescue',     color:['#38c1a6','#12a594'], params:mk({declip:true,denoise:.5,dereverb:.25,gate:.25,hpf:85,lpf:14000,
-     fix:[{freq:400,q:1.5,gain:-3},{freq:800,q:1.2,gain:-2},{freq:3800,q:2.5,gain:-5}],comp:{threshold:-22,ratio:4,attack:5,release:120,knee:6,makeup:2.5},
-     deess:{amount:45,freq:6000},tone:{warmth:3,presence:1},sat:{drive:14,mode:'tube'},airAmt:25,target:'reels'})},
+  {id:'phone',  label:'Phone Rescue',     color:['#38c1a6','#12a594'], params:mk({declip:true,denoise:.3,dereverb:.2,gate:.3,hpf:145,lpf:13000,
+     fix:[{freq:400,q:1.5,gain:-2},{freq:800,q:1.2,gain:-1},{freq:3800,q:2.5,gain:-5}],comp:{threshold:-20,ratio:3,attack:5,release:300,knee:6,makeup:2.5},
+     deess:{amount:32,freq:6000},tone:{warmth:1.5,presence:0},sat:{drive:6,mode:'tube'},airAmt:0,target:'reels'})},
   {id:'loud',   label:'Make it Loud',   /* broadband slam: heavy ratio + makeup into the limiter */     color:['#ff5a5f','#e11d48'], params:mk({hpf:70,lpf:17000,
      fix:[{freq:250,q:1.2,gain:0},{freq:700,q:1.2,gain:0},{freq:4000,q:2,gain:-1}],comp:{threshold:-28,ratio:6,attack:5,release:120,knee:4,makeup:5},
      dist:{amount:14,ratio:4,mode:'dist2'},tone:{presence:1,warmth:1},airAmt:15,target:'tiktok'})},
@@ -555,15 +555,15 @@ const PRESETS=[
      fix:[{freq:300,q:1.6,gain:-5},{freq:550,q:1.4,gain:-4},{freq:4000,q:2,gain:0}],comp:{threshold:-22,ratio:3,attack:15,release:180,knee:6,makeup:2.5},
      tone:{warmth:-1,presence:3},airAmt:20,target:'youtube'})},
   {id:'vlog',   label:'Vlog / Talking',   color:['#ff9a52','#f97316'], params:mk({denoise:.4,dereverb:.2,gate:.2,hpf:80,lpf:16000,
-     fix:[{freq:300,q:1.2,gain:-2},{freq:900,q:1.2,gain:-1},{freq:4000,q:2,gain:0}],comp:{threshold:-22,ratio:4,attack:8,release:150,knee:6,makeup:2.5},
-     deess:{amount:30,freq:6800},tone:{warmth:1,presence:3},airAmt:30,sat:{drive:10,mode:'tube'},target:'reels'})},
+     fix:[{freq:300,q:1.2,gain:-2},{freq:900,q:1.2,gain:-1},{freq:4000,q:2,gain:0}],comp:{threshold:-22,ratio:4,attack:8,release:280,knee:6,makeup:2.5},
+     deess:{amount:30,freq:6800},tone:{warmth:1,presence:2},airAmt:12,sat:{drive:10,mode:'tube'},target:'reels'})},
   {id:'podcast',label:'Podcast Voice',    color:['#ff6f91','#e84f78'], params:mk({declip:true,denoise:.5,dereverb:.3,gate:.3,hpf:85,lpf:15000,
-     fix:[{freq:300,q:1.4,gain:-3},{freq:800,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:4.5,attack:5,release:150,knee:6,makeup:2.5},
-     deess:{amount:40,freq:6500},tone:{warmth:2,presence:2},dist:{amount:5,ratio:4,mode:'dist2'},airAmt:25,target:'podcast'})},
+     fix:[{freq:300,q:1.4,gain:-3},{freq:800,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:4.5,attack:5,release:280,knee:6,makeup:2.5},
+     deess:{amount:40,freq:6500},tone:{warmth:2,presence:2},dist:{amount:5,ratio:4,mode:'dist2'},airAmt:10,target:'podcast'})},
   {id:'interview',label:'Interview',      color:['#33bcd6','#159cbb'], params:mk({declip:true,denoise:.6,dereverb:.35,gate:.4,hpf:95,lpf:14000,
      /* drier + tighter than Podcast Voice: deeper room-mud and boxiness cuts + more presence,
         no saturation/air color — plus heavier denoise/gate via the restoration engine. */
-     fix:[{freq:350,q:1.4,gain:-4},{freq:1000,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:5,attack:6,release:150,knee:6,makeup:3},
+     fix:[{freq:350,q:1.4,gain:-4},{freq:1000,q:1.2,gain:-2},{freq:4000,q:2,gain:-1}],comp:{threshold:-24,ratio:5,attack:6,release:280,knee:6,makeup:3},
      deess:{amount:40,freq:6500},tone:{warmth:1,presence:3},target:'podcast'})},
   {id:'harsh',  label:'Tame Harsh',       color:['#f4b53f','#e08a1e'], params:mk({hpf:80,lpf:13500,
      fix:[{freq:250,q:1.2,gain:-1},{freq:700,q:1.2,gain:-1},{freq:3800,q:3,gain:-5}],comp:{threshold:-22,ratio:3,attack:15,release:200,knee:8,makeup:2.5},
@@ -628,7 +628,7 @@ constructor(){super();
 mk(){const N=this.N;return{inR:new Float32Array(8192),outR:new Float32Array(8192),w:0,frame:0,rd:0,
  re:new Float32Array(N),im:new Float32Array(N),
  noise:new Float32Array(this.B).fill(1),init:0,peak:new Float32Array(this.B),g1:new Float32Array(this.B).fill(1),
- env:0,gg:1,pend:new Float32Array(128),pendv:false,h:[0,0,0,0],pk:0.5};}
+ env:0,gg:1,hold:0,pend:new Float32Array(128),pendv:false,h:[0,0,0,0],pk:0.5};}
 fft(re,im){const N=this.N,rev=this.rev,cs=this.cs,sn=this.sn;
  for(let i=0;i<N;i++){const j=rev[i];if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
  for(let len=2;len<=N;len<<=1){const half=len>>1,step=N/len;
@@ -681,19 +681,24 @@ frameStep(st){const N=this.N,H=this.H,B=this.B,p=this.p,M=8191,re=st.re,im=st.im
    if(dr>0.01){if(mag>st.peak[k])st.peak[k]=mag;else st.peak[k]*=0.982;
     const thr=st.peak[k]*0.7;
     if(mag<thr){const r=mag/(thr+1e-12);g*=Math.max(drFloor,Math.pow(r,0.6+3*dr));}}
-   g=st.g1[k]*0.6+g*0.4;st.g1[k]=g;
-   re[k]=mr*g;im[k]=mi*g;
+   st.g1[k]=st.g1[k]*0.78+g*0.22;}
+  for(let k=0;k<B;k++){
+   const gl=st.g1[k>0?k-1:0],gc=st.g1[k],gr=st.g1[k<B-1?k+1:B-1];
+   const g=(gl+2*gc+gr)*0.25;
+   re[k]*=g;im[k]*=g;
    if(k>0&&k<N/2){re[N-k]=re[k];im[N-k]=-im[k];}}}
  if(active_frame)st.init++;
  this.ifft(re,im);
  for(let i=0;i<N;i++)st.outR[(st.frame+i)&M]+=re[i]*this.win[i];
  st.frame+=H;}
-gate(st,y,n){const amt=this.p.gate;if(amt<0.01){st.gg=1;st.env=0;return;}
- const thr=Math.pow(10,(-72+50*amt)/20),minG=0.0316;
+gate(st,y,n){const amt=this.p.gate;if(amt<0.01){st.gg=1;st.env=0;st.hold=0;return;}
+ const thr=Math.pow(10,(-64+40*amt)/20),minG=0.25,HOLD=12000;
  for(let i=0;i<n;i++){const a=Math.abs(y[i]);
-  st.env=a>st.env?st.env+(a-st.env)*0.25:st.env*0.9994;
-  let tg=1;if(st.env<thr){const r=st.env/thr;tg=Math.max(minG,r*r);}
-  st.gg=tg<st.gg?st.gg+(tg-st.gg)*0.02:st.gg+(tg-st.gg)*0.12;
+  st.env=a>st.env?st.env+(a-st.env)*0.25:st.env*0.99985;
+  let tg=1;if(st.env<thr){const r=st.env/thr;tg=Math.max(minG,Math.pow(r,1.5));}
+  if(tg>=st.gg){st.hold=0;st.gg+=(tg-st.gg)*0.12;}
+  else if(st.hold<HOLD){st.hold++;}
+  else{st.gg+=(tg-st.gg)*0.0008;}
   y[i]*=st.gg;}}
 process(inputs,outputs){const inp=inputs[0],out=outputs[0];
  if(!inp||!inp.length)return true;
@@ -702,7 +707,7 @@ process(inputs,outputs){const inp=inputs[0],out=outputs[0];
   const st=this.ch[cix]||(this.ch[cix]=this.mk());
   const x=inp[Math.min(cix,inp.length-1)],y=out[cix],n=x.length;
   if(bypass){y.set(x);
-   if(st.w){st.w=0;st.frame=0;st.rd=0;st.init=0;st.pendv=false;st.gg=1;st.env=0;st.outR.fill(0);st.g1.fill(1);st.noise.fill(1);st.peak.fill(0);}
+   if(st.w){st.w=0;st.frame=0;st.rd=0;st.init=0;st.pendv=false;st.gg=1;st.env=0;st.hold=0;st.outR.fill(0);st.g1.fill(1);st.noise.fill(1);st.peak.fill(0);}
    continue;}
   let blk=x;
   if(p.declip>=0.5){const f=this.declip(st,x);if(!f){y.fill(0);continue;}blk=f;}
@@ -761,7 +766,7 @@ function buildGraph(){
 function updateAudio(){ if(!state.started)return;
   const p=eff(),t=ctx.currentTime,n=nodes,st=(node,v)=>node.setTargetAtTime(v,t,0.01);
   const hpf=p.hpf<=20?20:p.hpf,lpf=p.lpf>=20000?20000:p.lpf;
-  st(n.hpf1.frequency,hpf);st(n.hpf2.frequency,hpf);st(n.lpf1.frequency,lpf);st(n.lpf2.frequency,lpf);
+  st(n.hpf1.frequency,hpf);st(n.hpf2.frequency,hpf>20?Math.max(20,hpf*0.6):20);st(n.lpf1.frequency,lpf);st(n.lpf2.frequency,lpf);
   p.fix.forEach((b,i)=>{const f=n['fix'+i];st(f.frequency,b.freq);st(f.gain,b.gain);st(f.Q,b.q);});
   p.peq.forEach((b,i)=>{const f=n['peq'+i];st(f.frequency,b.freq);st(f.Q,b.q);st(f.gain,b.on?b.gain:0);});
   st(n.comp.threshold,p.comp.threshold);st(n.comp.ratio,p.comp.ratio);st(n.comp.knee,p.comp.knee);st(n.comp.attack,p.comp.attack/1000);st(n.comp.release,p.comp.release/1000);
